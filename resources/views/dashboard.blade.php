@@ -78,10 +78,10 @@
                     <h3 class="text-2xl font-black text-[#001D4B] mt-1">{{ $namaKereta }}</h3>
                 </div>
 
-                <button class="w-full bg-[#001D4B] active:bg-[#FF7300] text-white font-bold py-5 rounded-2xl shadow-lg flex items-center justify-center space-x-3 transition-colors duration-200">
+                <a href="{{ url('/jadwal') }}" class="w-full bg-[#001D4B] active:bg-[#FF7300] text-white font-bold py-5 rounded-2xl shadow-lg flex items-center justify-center space-x-3 transition-colors duration-200">
                     <span class="tracking-widest text-sm">PILIH KERETA</span>
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
-                </button>
+                </a>
             </div>
         </div>
         @endforeach
