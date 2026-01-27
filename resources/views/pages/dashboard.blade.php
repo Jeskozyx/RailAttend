@@ -9,7 +9,7 @@
 @endpush
 
 @section('content')
-    @role("Kondektur")
+    @unlessrole('Admin')
         <div class="mb-12 text-center">
             <h2 class="text-4xl font-black text-[#001D4B] mb-3">Daftar Kereta</h2>
             <p class="text-slate-600 text-lg">Pilih kereta untuk verifikasi keliling 30 menit</p>
@@ -60,7 +60,7 @@
                 </div>
             @endforeach
         </div>
-    @endrole
+    @endunlessrole
 @endsection
 
 @push('modal')
