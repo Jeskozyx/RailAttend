@@ -31,3 +31,11 @@ Route::middleware(['auth'])->group(function() {
         Route::delete('/{id}/destroy', [UserController::class, 'destroy'])->name('user.destroy');
     });
 });
+
+Route::get('/jadwal', function() {
+        return view('pages.schudle.jadwal');
+});
+
+Route::get('/gerbong', function() {
+        return view('pages.gerbong');
+});
