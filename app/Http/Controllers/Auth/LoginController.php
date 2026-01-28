@@ -37,6 +37,8 @@ class LoginController extends Controller
         if ($user) {
             if (Hash::check($request->password, $user->password)) {
                 Auth::login($user);
+                $request->session()->regenerate();
+                
                 return redirect()->route('dashboard');
             } else {
                 return back()->with('status', 'Email/Password Salah.');
@@ -46,10 +48,11 @@ class LoginController extends Controller
         return back()->with('status', 'Email/Password Salah.');
     }
 
-    public function logout() 
+    public function logout(Request $request) 
     {
         Auth::logout();
-        Session::flush();
+        $request->session()->invalidate();
+        $request->session()->regenerateToken();
         
         return redirect()->route('login');
     }

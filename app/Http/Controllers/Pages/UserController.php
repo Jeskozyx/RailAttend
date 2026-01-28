@@ -45,6 +45,7 @@ class UserController extends Controller
     {
         $request->validate([
             "name" => "required|string",
+            "nipp" => "nullable|integer|digits_between:1,6|unique:users,nipp",
             "email" => "required|string|unique:users,email",
             "role" => "required",
             "password" => "required|confirmed|min:8",
@@ -78,6 +79,12 @@ class UserController extends Controller
 
         $request->validate([
             "name" => "required|string",
+            "nipp" => [
+                'nullable',
+                'integer',
+                'digits_between:1,6',
+                Rule::unique('users', 'nipp')->ignore($user->id),
+            ],
             'email' => [
                 'required',
                 'string',
