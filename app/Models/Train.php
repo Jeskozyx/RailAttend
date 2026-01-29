@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class Train extends Model
 {
-    protected $table = 'train';
+    protected $table = 'trains';
     protected $fillable = ['name'];
 
     public function schedules()

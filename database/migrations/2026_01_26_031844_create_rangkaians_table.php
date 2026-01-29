@@ -18,7 +18,7 @@ return new class extends Migration
             $table->string('name');
             $table->timestamps();
 
-            $table->foreign('train_id')->references('id')->on('train')->onDelete('cascade');
+            $table->foreign('train_id')->references('id')->on('trains')->onDelete('cascade');
             $table->unique(['train_id', 'code']);
             $table->index(['train_id', 'code']);
         });

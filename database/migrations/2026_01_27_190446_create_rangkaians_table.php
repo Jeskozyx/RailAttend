@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('rangkaians', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('train_id')->constrained('train')->onDelete('cascade');
+            $table->foreignId('train_id')->constrained('trains')->onDelete('cascade');
             
             $table->string('name'); 
             $table->string('type'); 

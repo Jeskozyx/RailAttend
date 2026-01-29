@@ -55,7 +55,7 @@ class ScheduleController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'train_id' => 'required|exists:train,id',
+            'train_id' => 'required|exists:trains,id',
             'no_ka' => 'required|integer',
             'origin' => 'required|string',
             'destination' => 'required|string',
@@ -80,7 +80,7 @@ class ScheduleController extends Controller
     public function update(Request $request, string $id)
     {
         $request->validate([
-            'train_id' => 'required|exists:train,id',
+            'train_id' => 'required|exists:trains,id',
             'no_ka' => 'required|integer',
             'origin' => 'required|string',
             'destination' => 'required|string',

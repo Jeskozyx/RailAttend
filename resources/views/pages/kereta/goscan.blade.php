@@ -44,10 +44,10 @@
                 class="bg-[#001D4B] text-white px-4 py-3 rounded-xl font-bold transition-all">
                 ⬇ DOWNLOAD SEMUA (.ZIP)
             </button>
-            <button onclick="window.print()"
+            {{-- <button onclick="window.print()"
                 class="bg-[#FF7300] hover:bg-[#e66800] text-white px-6 py-3 rounded-xl font-bold shadow-lg transition-all">
                 🖨 CETAK KERTAS
-            </button>
+            </button> --}}
         </div>
     </div>
 

@@ -13,7 +13,7 @@ class RangkaianController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'train_id' => 'required|exists:train,id',
+            'train_id' => 'required|exists:trains,id',
             'type' => 'required|string',
             'jumlah' => 'required|numeric|min:1',
             'start_number' => 'required|numeric'
