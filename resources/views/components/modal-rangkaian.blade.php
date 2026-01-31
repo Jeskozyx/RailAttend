@@ -61,20 +61,12 @@
                         </label>
                         <select name="type"
                             class="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 px-4 text-sm font-bold text-[#001D4B] focus:ring-2 focus:ring-[#FF7300] focus:border-transparent transition-all">
-                            <option value="EKS">🎫 Eksekutif (EKS)</option>
-                            <option value="EKO">🎟️ Ekonomi (EKO)</option>
-                            <option value="LUX">👑 Luxury (LUX)</option>
-                            <option value="KMP">🍽️ Kereta Makan (KMP)</option>
-                            <option value="BP">⚡ Pembangkit (BP)</option>
+                            <option value="EKS">🎫 Eksekutif</option>
+                            <option value="EKO">🎟️ Ekonomi</option>
+                            <option value="LUX">👑 Luxury</option>
+                            <option value="KMP">🍽️ Kereta Makan</option>
+                            <option value="BP">⚡ Pembangkit</option>
                         </select>
-                    </div>
-                    <div class="space-y-2">
-                        <label class="text-[11px] font-bold text-slate-500 uppercase tracking-wider flex items-center">
-                            <span class="w-1.5 h-1.5 bg-[#001D4B] rounded-full mr-2"></span>
-                            Label Nama
-                        </label>
-                        <input type="text" name="nama_tipe" placeholder="Contoh: Eksekutif"
-                            class="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 px-4 text-sm font-bold text-[#001D4B] placeholder:text-slate-400 focus:ring-2 focus:ring-[#FF7300] focus:border-transparent transition-all">
                     </div>
                 </div>
 

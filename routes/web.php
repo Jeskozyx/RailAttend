@@ -54,7 +54,10 @@ Route::middleware(['auth'])->group(function() {
     });
 
     Route::post('/rangkaian/store', [RangkaianController::class, 'store'])->name('rangkaian.store');
+    Route::post('/rangkaian/reorder', [RangkaianController::class, 'reorder'])->name('rangkaian.reorder');
+    Route::post('/rangkaian/regenerate-names/{train_id}', [RangkaianController::class, 'regenerateNames'])->name('rangkaian.regenerate_names');
     Route::delete('/rangkaian/{id}/destroy', [RangkaianController::class, 'destroy'])->name('rangkaian.destroy');
+    Route::delete('/rangkaian/{train_id}/destroy-all', [RangkaianController::class, 'destroyAll'])->name('rangkaian.destroy_all');
     Route::get('/rangkaian/cetak/{train_id}', [RangkaianController::class, 'printQr'])->name('rangkaian.print');
 
     Route::get('/jadwal', [ScheduleController::class, 'jadwalKondektur'])->name('jadwal.view');

@@ -215,6 +215,18 @@
                     </div>
                 @endforelse
             </div>
+            <div class="mt-8 pb-10">
+                <form action="{{ route('kondektur.submit_report') }}" method="POST">
+                    @csrf
+                    <input type="hidden" name="schedule_id" value="{{ $schedule->id }}">
+                    <button type="submit"
+                        class="w-full py-4 rounded-2xl font-black tracking-widest text-white transition-all shadow-lg
+                    {{ $schedule->train->rangkaians->where('is_verified', false)->count() > 0 ? 'bg-slate-300 cursor-not-allowed' : 'bg-indigo-600 hover:bg-indigo-700 active:scale-95 shadow-indigo-200' }}"
+                        {{ $schedule->train->rangkaians->where('is_verified', false)->count() > 0 ? 'disabled' : '' }}>
+                        KIRIM LAPORAN SCAN
+                    </button>
+                </form>
+            </div>
         </div>
     </div>
 @endsection

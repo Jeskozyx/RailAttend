@@ -4,6 +4,10 @@
     Edit: {{ $train->name }}
 @endsection
 
+@push('js')
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
+@endpush
+
 @push('css')
 @endpush
 
@@ -112,6 +116,19 @@
                                     <span>BUAT QR</span>
                                 </a>
                             @endif
+                            <form action="{{ route('rangkaian.destroy_all', $train->id) }}" method="POST"
+                                onsubmit="return confirm('Apakah Anda yakin ingin menghapus SEMUA gerbong dalam rangkaian ini? Tindakan ini tidak dapat dibatalkan.')">
+                                @csrf
+                                @method('DELETE')
+                                <button type="submit"
+                                    class="text-xs font-bold text-white bg-[#001D4B] hover:bg-[#002D6B] px-4 py-2.5 rounded-xl transition-colors flex items-center space-x-2 shadow-lg shadow-orange-500/20">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                    </svg>
+                                    <span>HAPUS SEMUA RANGKAIAN</span>
+                                </button>
+                            </form>
                             <button type="button" onclick="document.getElementById('modalRangkaian').showModal()"
                                 class="text-xs font-bold text-white bg-[#FF7300] hover:bg-[#e66800] px-4 py-2.5 rounded-xl transition-colors flex items-center space-x-2 shadow-lg shadow-orange-500/20">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -125,7 +142,7 @@
 
                     <div class="p-6">
                         @if ($train->rangkaians->count() > 0)
-                            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                            <div id="rangkaian-list" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
                                 @foreach ($train->rangkaians as $rangkaian)
                                     @php
                                         $typeConfig = match ($rangkaian->type) {
@@ -167,8 +184,8 @@
                                             ],
                                         };
                                     @endphp
-                                    <div
-                                        class="bg-white rounded-xl p-4 border {{ $typeConfig['border'] }} shadow-sm group hover:shadow-md transition-all">
+                                    <div data-id="{{ $rangkaian->id }}"
+                                        class="cursor-move bg-white rounded-xl p-4 border {{ $typeConfig['border'] }} shadow-sm group hover:shadow-md transition-all">
                                         <div class="flex items-center justify-between mb-2">
                                             <span
                                                 class="px-2 py-0.5 {{ $typeConfig['bg'] }} {{ $typeConfig['text'] }} rounded text-[10px] font-bold">
@@ -245,5 +262,56 @@
                 });
             });
         });
+
+        // SortableJS Logic
+        var el = document.getElementById('rangkaian-list');
+        if (el) {
+            var sortable = Sortable.create(el, {
+                animation: 150,
+                ghostClass: 'bg-indigo-50',
+                onEnd: function(evt) {
+                    var itemEl = evt.item; // dragged HTMLElement
+
+                    // Get all IDs in new order
+                    var ids = [];
+                    document.querySelectorAll('#rangkaian-list > div').forEach(function(div) {
+                        ids.push(div.getAttribute('data-id'));
+                    });
+
+                    // Send reorder request
+                    fetch('{{ route('rangkaian.reorder') }}', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                            },
+                            body: JSON.stringify({
+                                ids: ids
+                            })
+                        })
+                        .then(response => response.json())
+                        .then(data => {
+                            console.log('Order updated');
+
+                            // Optional: Show toast
+                            const toast = Swal.mixin({
+                                toast: true,
+                                position: 'top-end',
+                                showConfirmButton: false,
+                                timer: 2000,
+                                timerProgressBar: true,
+                            });
+                            toast.fire({
+                                icon: 'success',
+                                title: 'Urutan berhasil disimpan'
+                            });
+                        })
+                        .catch((error) => {
+                            console.error('Error:', error);
+                            Swal.fire('Error', 'Gagal menyimpan urutan', 'error');
+                        });
+                },
+            });
+        }
     </script>
 @endpush

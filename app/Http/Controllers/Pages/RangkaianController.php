@@ -10,6 +10,60 @@ use Illuminate\Support\Str;
 
 class RangkaianController extends Controller
 {
+    public function reorder(Request $request)
+    {
+        $request->validate([
+            'ids' => 'required|array',
+            'ids.*' => 'exists:rangkaians,id',
+        ]);
+
+        foreach ($request->ids as $index => $id) {
+            Rangkaian::where('id', $id)->update(['urutan' => $index + 1]);
+        }
+
+        return response()->json(['status' => 'success']);
+    }
+
+    public function regenerateNames($train_id)
+    {
+        $train = Train::with(['rangkaians' => function($q) {
+            $q->orderBy('urutan', 'asc');
+        }])->findOrFail($train_id);
+
+        $counters = [];
+
+        foreach ($train->rangkaians as $rangkaian) {
+            $type = $rangkaian->type;
+            
+            if (!isset($counters[$type])) {
+                $counters[$type] = 1;
+            }
+            
+            $nomorGerbong = $counters[$type];
+            $counters[$type]++;
+
+            $labelTipe = match($type) {
+                'EKS' => 'Eksekutif',
+                'EKO' => 'Ekonomi',
+                'LUX' => 'Luxury',
+                'KMP' => 'Kereta Makan',
+                'BP' => 'Pembangkit',
+                default => $type,
+            };
+
+            if ($type == 'KMP' || $type == 'BP') {
+                $finalName = $labelTipe;
+            } else {
+                $finalName = $labelTipe . ' ' . $nomorGerbong;
+            }
+
+            $rangkaian->name = $finalName;
+            $rangkaian->save();
+        }
+
+        return back()->with('success', 'Nama dan nomor urut gerbong berhasil di-regenerate sesuai urutan baru!');
+    }
+
     public function store(Request $request)
     {
         $request->validate([
@@ -53,7 +107,7 @@ class RangkaianController extends Controller
                 $finalName = $labelTipe . ' ' . $nomorGerbong;
             }
 
-            $qrRaw = 'KAI-' . Str::upper(Str::random(6));
+            $qrRaw = 'CN-' . Str::upper(Str::random(6));
 
             Rangkaian::create([
                 'train_id' => $request->train_id,
@@ -84,6 +138,12 @@ class RangkaianController extends Controller
         $rangkaian->delete();
         return back()->with('success', 'Rangkaian berhasil dihapus (QR Code juga dihapus)!');
     }
+
+    public function destroyAll($train_id)
+    {
+        Rangkaian::where('train_id', $train_id)->delete();
+        return back()->with('success', 'Semua rangkaian berhasil dihapus!');
+    }
     
     public function printQr($train_id)
     {
@@ -99,20 +159,7 @@ class RangkaianController extends Controller
                 $rangkaian->save();
             }
 
-            if ($rangkaian->qr_code) {
-                $filename = $rangkaian->qr_code . '.svg';
-                $path = public_path('assets/images/qr/' . $filename);
-                
-                if (!file_exists($path)) {
-                    $qrImage = \SimpleSoftwareIO\QrCode\Facades\QrCode::format('svg')
-                        ->size(300)
-                        ->margin(2)
-                        ->merge(public_path('assets/images/kai_logo.png'), 0.3, true)
-                        ->generate($rangkaian->qr_code);
-                    
-                    file_put_contents($path, $qrImage);
-                }
-            }
+
         }
 
         return view('pages.kereta.goscan', compact('train'));
