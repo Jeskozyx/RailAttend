@@ -11,11 +11,15 @@ use Illuminate\Support\Facades\Route;
 
 Route::get('/', [LoginController::class, 'index'])->name('login');
 Route::post('/login', [LoginController::class, 'login'])->name('login.post');
+Route::get('/scanKA', function () {
+    return view('pages.scanKA'); // Pastikan nama file blade-nya sama
+});
 
 Route::middleware(['auth'])->group(function() {
     
     Route::get('/logout', [LoginController::class, 'logout'])->name('logout');
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+
 
     Route::prefix('role')->group(function () {
         Route::get('/', [RoleController::class, 'index'])->name('role.index');
