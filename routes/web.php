@@ -11,9 +11,8 @@ use Illuminate\Support\Facades\Route;
 
 Route::get('/', [LoginController::class, 'index'])->name('login');
 Route::post('/login', [LoginController::class, 'login'])->name('login.post');
-Route::get('/scanKA', function () {
-    return view('pages.scanKA'); // Pastikan nama file blade-nya sama
-});
+Route::get('/scanKA', [DashboardController::class, 'scanKA'])->name('dashboard.scanKA');
+Route::get('/scanPerDinas', [DashboardController::class, 'scanPerDinas'])->name('dashboard.scanPerDinas');
 
 Route::middleware(['auth'])->group(function() {
     
