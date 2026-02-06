@@ -160,7 +160,12 @@
         document.addEventListener('DOMContentLoaded', function() {
 
             // ── Real Data from Controller ──
-            const chartData = @json($chartData);
+            let chartData = @json($chartData);
+
+            // ── Filter Parameters for AJAX ──
+            const startDate = "{{ $startDate }}";
+            const endDate = "{{ $endDate }}";
+            const trainId = "{{ $trainId ?? '' }}";
 
             // ── Init Chart ──
             const ctx = document.getElementById('scanPerDinasChart').getContext('2d');
@@ -243,6 +248,51 @@
                     }
                 }
             });
+
+            // ==========================================
+            // AJAX POLLING (Update tiap 5 detik)
+            // ==========================================
+
+            // Store last data for comparison
+            let lastChartDataJson = JSON.stringify(chartData);
+
+            function fetchScanPerDinasStats() {
+                const params = new URLSearchParams({
+                    start_date: startDate,
+                    end_date: endDate,
+                    train_id: trainId
+                });
+
+                fetch("{{ route('dashboard.scanPerDinas.stats') }}?" + params.toString())
+                    .then(response => response.json())
+                    .then(data => {
+                        // Compare new data with last data
+                        const newChartDataJson = JSON.stringify(data);
+
+                        // Only update if data has changed
+                        if (newChartDataJson === lastChartDataJson) {
+                            return; // Skip update
+                        }
+
+                        console.log('Data changed! Updating chart...');
+                        lastChartDataJson = newChartDataJson;
+
+                        // Update chartData reference
+                        chartData = data;
+
+                        // Update chart labels
+                        scanChart.data.labels = data.labels;
+
+                        // Update datasets - since datasets can change dynamically
+                        // We need to replace the entire datasets array
+                        scanChart.data.datasets = data.datasets;
+                        scanChart.update();
+                    })
+                    .catch(error => console.error('Error Polling ScanPerDinas:', error));
+            }
+
+            // Jalankan polling setiap 5000ms (5 Detik)
+            setInterval(fetchScanPerDinasStats, 5000);
         });
     </script>
 @endpush

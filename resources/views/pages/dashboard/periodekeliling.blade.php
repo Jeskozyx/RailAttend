@@ -1,7 +1,7 @@
 @extends('layouts.app')
 
 @section('title')
-    Scan KA
+    Periode Keliling
 @endsection
 
 @push('css')
@@ -105,15 +105,15 @@
             {{-- Header --}}
             <div class="mb-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                 <div class="flex flex-col justify-center">
-                    <h1 class="text-3xl font-bold text-gray-900">Scan KA</h1>
-                    <p class="mt-1 text-sm text-gray-500">Jumlah scan per kereta berdasarkan periode</p>
+                    <h1 class="text-3xl font-bold text-gray-900">Periode Keliling</h1>
+                    <p class="mt-1 text-sm text-gray-500">Statistik scan per kereta berdasarkan periode dan jabatan</p>
                 </div>
 
                 @include('pages.dashboard.nav')
             </div>
 
             {{-- Filter Bar --}}
-            <form action="{{ route('dashboard.scanKA') }}" method="GET" class="filter-bar mb-6">
+            <form action="{{ route('dashboard.periodeKeliling') }}" method="GET" class="filter-bar mb-6" id="filterForm">
                 <span class="filter-label">Nama KA:</span>
                 <select name="train_id" id="selectKA">
                     <option value="">Semua Kereta</option>
@@ -133,18 +133,52 @@
                 <button type="submit" class="btn-klik">FILTER</button>
             </form>
 
-            {{-- Chart --}}
-            <div class="chart-card">
-                <p class="chart-title">Jumlah Scan Berdasarkan Nama KA</p>
-                <p class="chart-sub">Data per tanggal dalam periode yang dipilih</p>
-                <div class="canvas-wrap">
-                    <canvas id="scanKAChart"></canvas>
+            {{-- Hybrid Dashboard: Chart + Detail Table --}}
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+                {{-- LEFT: Stacked Bar Chart for Trend --}}
+                <div class="lg:col-span-2 chart-card">
+                    <div class="flex items-center justify-between mb-4">
+                        <div>
+                            <p class="chart-title text-left">Total Scan Per Kereta</p>
+                            <p class="chart-sub text-left">Grafik untuk melihat trend perbandingan</p>
+                        </div>
+                    </div>
+                    <div class="canvas-wrap">
+                        <canvas id="periodeKelilingChart"></canvas>
+                    </div>
                 </div>
+
+                {{-- RIGHT: Detail Table --}}
+                <div class="chart-card overflow-hidden">
+                    <div class="mb-4">
+                        <p class="chart-title text-left">Rincian Per Tanggal</p>
+                        <p class="chart-sub text-left">Detail scan per hari per jabatan</p>
+                    </div>
+                    <div class="overflow-y-auto max-h-[380px]" id="detailTableContainer">
+                        <table class="w-full text-xs">
+                            <thead class="bg-gray-50 sticky top-0">
+                                <tr>
+                                    <th class="text-left px-3 py-2 font-semibold text-gray-700">KA</th>
+                                    <th class="text-left px-3 py-2 font-semibold text-[#FC5D02]">Polsuska</th>
+                                    <th class="text-left px-3 py-2 font-semibold text-[#041C4D]">Kondektur</th>
+                                    <th class="text-left px-3 py-2 font-semibold text-[#1767E8]">TKA</th>
+                                </tr>
+                            </thead>
+                            <tbody id="detailTableBody" class="divide-y divide-gray-100">
+                                {{-- Populated by JS --}}
+                            </tbody>
+                        </table>
+                        <div id="noDataMessage" class="hidden text-center py-8 text-gray-400 text-sm">
+                            Tidak ada data untuk periode ini
+                        </div>
+                    </div>
+                </div>
+
             </div>
 
         </div>
     @else
-        {{-- Redirect or show unauthorized message if needed --}}
         <script>
             window.location = "{{ route('dashboard') }}";
         </script>
@@ -163,9 +197,9 @@
             let chartData = @json($chartData);
 
             // ── Filter Parameters for AJAX ──
-            const startDate = "{{ $startDate }}";
-            const endDate = "{{ $endDate }}";
-            const trainId = "{{ $trainId ?? '' }}";
+            let startDate = "{{ $startDate }}";
+            let endDate = "{{ $endDate }}";
+            let trainId = "{{ $trainId ?? '' }}";
 
             // ── Warna dataset (senada palet KAI) ──
             const colors = {
@@ -184,7 +218,7 @@
             };
 
             // ── Load & Resize Icons for Legend ──
-            const iconSize = 25; // Desired size in pixels
+            const iconSize = 25;
 
             function createResizedIcon(src) {
                 const img = new Image();
@@ -196,7 +230,7 @@
 
                 img.onload = function() {
                     ctx.drawImage(img, 0, 0, iconSize, iconSize);
-                    scanChart.update(); // Refresh chart when image loads
+                    periodeChart.update();
                 };
                 return canvas;
             }
@@ -205,10 +239,10 @@
             const kondekturIcon = createResizedIcon("{{ asset('assets/images/profile/kondektur_icons.png') }}");
             const tkaIcon = createResizedIcon("{{ asset('assets/images/profile/TKA_icons.png') }}");
 
-            // ── Init Chart ──
-            const ctx = document.getElementById('scanKAChart').getContext('2d');
+            // ── Init Chart (Stacked for trend comparison) ──
+            const ctx = document.getElementById('periodeKelilingChart').getContext('2d');
 
-            const scanChart = new Chart(ctx, {
+            const periodeChart = new Chart(ctx, {
                 type: 'bar',
                 data: {
                     labels: chartData.labels,
@@ -242,9 +276,8 @@
                     responsive: true,
                     maintainAspectRatio: false,
                     interaction: {
-                        mode: 'nearest',
-                        axis: 'x',
-                        intersect: true
+                        mode: 'index',
+                        intersect: false
                     },
                     plugins: {
                         legend: {
@@ -274,48 +307,27 @@
                             padding: 12,
                             cornerRadius: 6,
                             displayColors: true,
-                            boxPadding: 6,
-                            callbacks: {
-                                label: function(context) {
-                                    let label = context.dataset.label || '';
-                                    let value = context.parsed.y;
-                                    let dateIndex = context.dataIndex;
-                                    let details = [];
-
-                                    // Get details based on dataset label
-                                    if (label === 'Polsuska') {
-                                        details = chartData.polsuskaDetails[dateIndex] || [];
-                                    } else if (label === 'Kondektur') {
-                                        details = chartData.kondekturDetails[dateIndex] || [];
-                                    } else if (label === 'TKA') {
-                                        details = chartData.tkaDetails[dateIndex] || [];
-                                    }
-
-                                    // Format: "Role: TrainA(1): 5, TrainB(2): 3"
-                                    if (details.length > 0) {
-                                        return label + ': ' + details.join(', ');
-                                    } else {
-                                        return label + ': ' + value;
-                                    }
-                                }
-                            }
+                            boxPadding: 6
                         }
                     },
                     scales: {
                         x: {
+                            stacked: true,
                             grid: {
                                 display: false
                             },
                             ticks: {
                                 color: '#64748b',
                                 font: {
-                                    size: 11,
+                                    size: 10,
                                     weight: '600'
                                 },
-                                maxRotation: 0
+                                maxRotation: 45,
+                                minRotation: 45
                             }
                         },
                         y: {
+                            stacked: true,
                             beginAtZero: true,
                             grid: {
                                 color: '#f1f5f9',
@@ -334,48 +346,97 @@
             });
 
             // ==========================================
+            // Detail Table Population
+            // ==========================================
+            const detailTableBody = document.getElementById('detailTableBody');
+            const noDataMessage = document.getElementById('noDataMessage');
+
+            function populateDetailTable(data) {
+                detailTableBody.innerHTML = '';
+
+                if (!data.labels || data.labels.length === 0) {
+                    noDataMessage.classList.remove('hidden');
+                    return;
+                }
+                noDataMessage.classList.add('hidden');
+
+                data.labels.forEach((trainLabel, index) => {
+                    const polDetails = (data.polsuskaDetails[index] || []).join('<br>') || '-';
+                    const konDetails = (data.kondekturDetails[index] || []).join('<br>') || '-';
+                    const tkaDetails = (data.tkaDetails[index] || []).join('<br>') || '-';
+
+                    const row = document.createElement('tr');
+                    row.className = 'hover:bg-gray-50';
+                    row.innerHTML = `
+                        <td class="px-3 py-2 font-medium text-gray-800 align-top">${trainLabel}</td>
+                        <td class="px-3 py-2 text-gray-600 align-top">${polDetails}</td>
+                        <td class="px-3 py-2 text-gray-600 align-top">${konDetails}</td>
+                        <td class="px-3 py-2 text-gray-600 align-top">${tkaDetails}</td>
+                    `;
+                    detailTableBody.appendChild(row);
+                });
+            }
+
+            // Initial table population
+            populateDetailTable(chartData);
+
+            // ==========================================
             // AJAX POLLING (Update tiap 5 detik)
             // ==========================================
 
-            // Store last data for comparison
             let lastChartDataJson = JSON.stringify(chartData);
 
-            function fetchScanKAStats() {
+            function fetchPeriodeKelilingStats() {
                 const params = new URLSearchParams({
                     start_date: startDate,
                     end_date: endDate,
                     train_id: trainId
                 });
 
-                fetch("{{ route('dashboard.scanKA.stats') }}?" + params.toString())
+                fetch("{{ route('dashboard.periodeKeliling.stats') }}?" + params.toString())
                     .then(response => response.json())
                     .then(data => {
-                        // Compare new data with last data
                         const newChartDataJson = JSON.stringify(data);
 
-                        // Only update if data has changed
                         if (newChartDataJson === lastChartDataJson) {
                             return; // Skip update
                         }
 
-                        console.log('Data changed! Updating chart...');
+                        console.log('Data changed! Updating chart and table...');
                         lastChartDataJson = newChartDataJson;
 
-                        // Update chartData reference for tooltip callbacks
+                        // Update chartData reference
                         chartData = data;
 
-                        // Update chart data
-                        scanChart.data.labels = data.labels;
-                        scanChart.data.datasets[0].data = data.polsuska;
-                        scanChart.data.datasets[1].data = data.kondektur;
-                        scanChart.data.datasets[2].data = data.tka;
-                        scanChart.update();
+                        // Update chart
+                        periodeChart.data.labels = data.labels;
+                        periodeChart.data.datasets[0].data = data.polsuska;
+                        periodeChart.data.datasets[1].data = data.kondektur;
+                        periodeChart.data.datasets[2].data = data.tka;
+                        periodeChart.update();
+
+                        // Update table
+                        populateDetailTable(data);
                     })
-                    .catch(error => console.error('Error Polling ScanKA:', error));
+                    .catch(error => console.error('Error Polling Periode Keliling:', error));
             }
 
-            // Jalankan polling setiap 5000ms (5 Detik)
-            setInterval(fetchScanKAStats, 5000);
+            // Polling setiap 5 detik
+            setInterval(fetchPeriodeKelilingStats, 5000);
+
+            // ==========================================
+            // Live filter update (tanpa reload)
+            // ==========================================
+            document.getElementById('filterForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+
+                startDate = document.getElementById('startDate').value;
+                endDate = document.getElementById('endDate').value;
+                trainId = document.getElementById('selectKA').value;
+
+                lastChartDataJson = null; // Force refresh
+                fetchPeriodeKelilingStats();
+            });
         });
     </script>
 @endpush

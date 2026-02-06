@@ -154,7 +154,8 @@
             </div>
             <div>
                 <p class="card-label">Total Users</p>
-                <h3 class="card-value">{{ $totalUsers ?? '0' }}</h3>
+                {{-- TAMBAHAN: ID="total-users" --}}
+                <h3 class="card-value" id="total-users">{{ $totalUsers ?? '0' }}</h3>
             </div>
         </div>
     </div>
@@ -223,7 +224,8 @@
             </div>
             <div>
                 <p class="card-label">Total Sarana</p>
-                <h3 class="card-value">{{ $totalSarana ?? '0' }}</h3>
+                {{-- TAMBAHAN: ID="total-sarana" --}}
+                <h3 class="card-value" id="total-sarana">{{ $totalSarana ?? '0' }}</h3>
             </div>
         </div>
     </div>
@@ -240,12 +242,20 @@
                 <h3 class="text-lg font-bold text-gray-900">Statistik Scan per Kereta</h3>
                 <p class="text-xs text-gray-500">Jumlah scan verifikasi per Nomor KA (Jadwal)</p>
             </div>
-            <div class="bg-blue-50 p-2 rounded-lg">
-                <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-[#001D4B]" fill="none"
-                    viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                        d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                </svg>
+            <div class="flex items-center gap-2">
+                <select id="sortTrainStats"
+                    class="bg-gray-50 border border-gray-300 text-gray-900 text-xs rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-1.5 cursor-pointer">
+                    <option value="name">Nama (A-Z)</option>
+                    <option value="most">Paling Banyak</option>
+                    <option value="least">Paling Sedikit</option>
+                </select>
+                <div class="bg-blue-50 p-2 rounded-lg">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-[#001D4B]" fill="none"
+                        viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                    </svg>
+                </div>
             </div>
         </div>
         <div class="relative h-[350px] w-full">
@@ -273,7 +283,8 @@
                             class="w-6 h-6 mr-2 object-contain">
                         <span class="text-xs font-semibold text-gray-600">Polsuska</span>
                     </div>
-                    <span
+                    {{-- TAMBAHAN: ID="perc-polsuska" --}}
+                    <span id="perc-polsuska"
                         class="text-xs font-bold text-gray-900 bg-gray-50 px-2 py-1 rounded">{{ $chartPiePercentages[0] ?? 0 }}%</span>
                 </div>
 
@@ -284,7 +295,8 @@
                             class="w-6 h-6 mr-2 object-contain">
                         <span class="text-xs font-semibold text-gray-600">Kondektur</span>
                     </div>
-                    <span
+                    {{-- TAMBAHAN: ID="perc-kondektur" --}}
+                    <span id="perc-kondektur"
                         class="text-xs font-bold text-gray-900 bg-gray-50 px-2 py-1 rounded">{{ $chartPiePercentages[1] ?? 0 }}%</span>
                 </div>
 
@@ -295,7 +307,8 @@
                             class="w-6 h-6 mr-2 object-contain">
                         <span class="text-xs font-semibold text-gray-600">TKA</span>
                     </div>
-                    <span
+                    {{-- TAMBAHAN: ID="perc-tka" --}}
+                    <span id="perc-tka"
                         class="text-xs font-bold text-gray-900 bg-gray-50 px-2 py-1 rounded">{{ $chartPiePercentages[2] ?? 0 }}%</span>
                 </div>
             </div>
@@ -308,70 +321,64 @@
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0"></script>
 
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            const ctxBar = document.getElementById('trainTypeChart').getContext('2d');
+        // Global variables for Chart Instance
+        let barChartInstance = null;
+        let pieChartInstance = null;
 
-            // 1. Data Mentah (Dari Controller)
+        document.addEventListener('DOMContentLoaded', function() {
+            // ==========================================
+            // 1. SETUP CHART AWAL (Tampilan Awal)
+            // ==========================================
+            const ctxBar = document.getElementById('trainTypeChart').getContext('2d');
             const labels = @json($chartTrainTypeLabels);
             const values = @json($chartTrainTypeValues);
 
-            // ... (rest of the script logic, I will assume I don't need to replace the inner content if I just wrap it)
-            // Wait, I need to wrap the WHOLE script block.
-            // It is safer to replace the start and end of the script block.
-
-            // 2. Sorting otomatis sudah dilakukan di controller (orderBy desc)
-
-            // 3. Gradient Warna Biru (senada card)
             const blueGradient = ctxBar.createLinearGradient(0, 0, 0, 320);
             blueGradient.addColorStop(0, '#001D4B');
             blueGradient.addColorStop(0.5, '#0a3d7c');
             blueGradient.addColorStop(1, '#1a6fa0');
 
-            // 4. Definisi Gradient Shadow (senada card, navy transparan)
             const shadowGradient = ctxBar.createLinearGradient(0, 0, 0, 320);
             shadowGradient.addColorStop(0, 'rgba(0, 29, 75, 0.25)');
             shadowGradient.addColorStop(0.6, 'rgba(10, 61, 124, 0.12)');
             shadowGradient.addColorStop(1, 'rgba(10, 61, 124, 0)');
 
-            new Chart(ctxBar, {
+            barChartInstance = new Chart(ctxBar, {
                 plugins: [ChartDataLabels],
                 data: {
                     labels: labels,
                     datasets: [{
-                            type: 'line',
-                            label: 'Trend',
-                            data: values,
-                            borderColor: '#1a6fa0',
-                            borderWidth: 2,
-                            pointRadius: 0,
-                            pointHitRadius: 10,
-                            tension: 0.4,
-                            fill: true,
-                            backgroundColor: shadowGradient,
-                            datalabels: {
-                                display: false
-                            },
-                            order: 2
+                        type: 'line',
+                        label: 'Trend',
+                        data: values,
+                        borderColor: '#1a6fa0',
+                        borderWidth: 2,
+                        pointRadius: 0,
+                        tension: 0.4,
+                        fill: true,
+                        backgroundColor: shadowGradient,
+                        datalabels: {
+                            display: false
                         },
-                        {
-                            type: 'bar',
-                            label: 'Jumlah Scan',
-                            data: values,
-                            backgroundColor: blueGradient,
-                            borderRadius: 6,
-                            barThickness: 45,
-                            datalabels: {
-                                anchor: 'end',
-                                align: 'top',
-                                color: '#4B5563',
-                                font: {
-                                    weight: 'bold',
-                                    size: 12
-                                },
-                                offset: 4
-                            }
+                        order: 2
+                    }, {
+                        type: 'bar',
+                        label: 'Jumlah Scan',
+                        data: values,
+                        backgroundColor: blueGradient,
+                        borderRadius: 6,
+                        barThickness: 45,
+                        datalabels: {
+                            anchor: 'end',
+                            align: 'top',
+                            color: '#4B5563',
+                            font: {
+                                weight: 'bold',
+                                size: 12
+                            },
+                            offset: 4
                         }
-                    ]
+                    }]
                 },
                 options: {
                     aspectRatio: 2,
@@ -385,38 +392,19 @@
                     plugins: {
                         legend: {
                             display: false
-                        },
-                        datalabels: {
-                            display: true
                         }
                     },
                     scales: {
                         y: {
                             beginAtZero: true,
                             max: Math.max(...values) + 5,
-                            grid: {
-                                color: '#F3F4F6',
-                                drawBorder: false
-                            },
                             ticks: {
-                                display: true,
-                                stepSize: 20,
-                                color: '#9CA3AF',
-                                font: {
-                                    size: 10
-                                }
+                                stepSize: 20
                             }
                         },
                         x: {
                             grid: {
                                 display: false
-                            },
-                            ticks: {
-                                color: '#4B5563',
-                                font: {
-                                    weight: '600',
-                                    size: 11
-                                }
                             }
                         }
                     }
@@ -424,7 +412,7 @@
             });
 
             const ctxPie = document.getElementById('dinasPieChart').getContext('2d');
-            new Chart(ctxPie, {
+            pieChartInstance = new Chart(ctxPie, {
                 type: 'doughnut',
                 data: {
                     labels: @json($chartPieLabels),
@@ -439,19 +427,80 @@
                     responsive: true,
                     maintainAspectRatio: false,
                     cutout: '75%',
-                    layout: {
-                        padding: 15
-                    },
                     plugins: {
                         legend: {
                             display: false
-                        },
-                        tooltip: {
-                            enabled: true
                         }
                     }
                 }
             });
+
+            // ==========================================
+            // 2. LOGIKA AJAX POLLING (Update tiap 5 detik)
+            // ==========================================
+
+            let lastDashboardData = null;
+
+            // Event listener for sort dropdown
+            const sortDropdown = document.getElementById('sortTrainStats');
+            if (sortDropdown) {
+                sortDropdown.addEventListener('change', function() {
+                    lastDashboardData = null; // Force update on sort change
+                    fetchDashboardStats();
+                });
+            }
+
+            function fetchDashboardStats() {
+                const sort = sortDropdown ? sortDropdown.value : 'name';
+                fetch("{{ route('dashboard.stats') }}?sort=" + sort)
+                    .then(response => response.json())
+                    .then(data => {
+                        // Compare new data with last data
+                        const currentDataJson = JSON.stringify(data);
+                        if (currentDataJson === lastDashboardData) {
+                            return; // No change, skip update
+                        }
+
+                        // console.log('Data changed! Updating dashboard...'); 
+                        lastDashboardData = currentDataJson;
+
+                        // A. Update Angka Text (DOM ID)
+                        if (document.getElementById('total-users'))
+                            document.getElementById('total-users').innerText = data.totalUsers;
+
+                        if (document.getElementById('total-sarana'))
+                            document.getElementById('total-sarana').innerText = data.totalSarana;
+
+                        // B. Update Persentase Text
+                        if (data.chartPiePercentages) {
+                            if (document.getElementById('perc-polsuska')) document.getElementById(
+                                'perc-polsuska').innerText = data.chartPiePercentages[0] + '%';
+                            if (document.getElementById('perc-kondektur')) document.getElementById(
+                                'perc-kondektur').innerText = data.chartPiePercentages[1] + '%';
+                            if (document.getElementById('perc-tka')) document.getElementById('perc-tka')
+                                .innerText = data.chartPiePercentages[2] + '%';
+                        }
+
+                        // C. Update Bar Chart
+                        if (barChartInstance) {
+                            barChartInstance.data.labels = data.chartTrainLabels;
+                            barChartInstance.data.datasets[0].data = data.chartTrainValues;
+                            barChartInstance.data.datasets[1].data = data.chartTrainValues;
+                            barChartInstance.options.scales.y.max = Math.max(...data.chartTrainValues) + 5;
+                            barChartInstance.update();
+                        }
+
+                        // D. Update Pie Chart
+                        if (pieChartInstance) {
+                            pieChartInstance.data.datasets[0].data = data.chartPieValues;
+                            pieChartInstance.update();
+                        }
+                    })
+                    .catch(error => console.error('Error Polling:', error));
+            }
+
+            // Jalankan polling setiap 5000ms (5 Detik)
+            setInterval(fetchDashboardStats, 5000);
         });
     </script>
 @endpush

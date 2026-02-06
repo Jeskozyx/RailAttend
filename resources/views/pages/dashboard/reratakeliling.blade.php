@@ -1,7 +1,7 @@
 @extends('layouts.app')
 
 @section('title')
-    Scan KA
+    Rata-rata Keliling
 @endsection
 
 @push('css')
@@ -76,7 +76,6 @@
         }
 
         .chart-card .chart-title {
-            text-align: center;
             font-size: 1.1rem;
             font-weight: 700;
             color: #1e293b;
@@ -84,7 +83,6 @@
         }
 
         .chart-card .chart-sub {
-            text-align: center;
             font-size: 0.82rem;
             color: #94a3b8;
             margin-bottom: 18px;
@@ -94,6 +92,11 @@
             position: relative;
             width: 100%;
             height: 380px;
+        }
+
+        .over-limit {
+            color: #dc2626;
+            font-weight: 600;
         }
     </style>
 @endpush
@@ -105,15 +108,15 @@
             {{-- Header --}}
             <div class="mb-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                 <div class="flex flex-col justify-center">
-                    <h1 class="text-3xl font-bold text-gray-900">Scan KA</h1>
-                    <p class="mt-1 text-sm text-gray-500">Jumlah scan per kereta berdasarkan periode</p>
+                    <h1 class="text-3xl font-bold text-gray-900">Rata-rata Keliling</h1>
+                    <p class="mt-1 text-sm text-gray-500">Durasi scan per kereta (menit) - Limit: 30 menit</p>
                 </div>
 
                 @include('pages.dashboard.nav')
             </div>
 
             {{-- Filter Bar --}}
-            <form action="{{ route('dashboard.scanKA') }}" method="GET" class="filter-bar mb-6">
+            <form action="{{ route('dashboard.rerataKeliling') }}" method="GET" class="filter-bar mb-6" id="filterForm">
                 <span class="filter-label">Nama KA:</span>
                 <select name="train_id" id="selectKA">
                     <option value="">Semua Kereta</option>
@@ -133,18 +136,52 @@
                 <button type="submit" class="btn-klik">FILTER</button>
             </form>
 
-            {{-- Chart --}}
-            <div class="chart-card">
-                <p class="chart-title">Jumlah Scan Berdasarkan Nama KA</p>
-                <p class="chart-sub">Data per tanggal dalam periode yang dipilih</p>
-                <div class="canvas-wrap">
-                    <canvas id="scanKAChart"></canvas>
+            {{-- Hybrid Dashboard: Chart + Detail Table --}}
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+                {{-- LEFT: Grouped Bar Chart for Duration --}}
+                <div class="lg:col-span-2 chart-card">
+                    <div class="flex items-center justify-between mb-4">
+                        <div>
+                            <p class="chart-title">Durasi Keliling Per Kereta</p>
+                            <p class="chart-sub">Garis merah = Limit 30 menit</p>
+                        </div>
+                    </div>
+                    <div class="canvas-wrap">
+                        <canvas id="rerataKelilingChart"></canvas>
+                    </div>
                 </div>
+
+                {{-- RIGHT: Detail Table --}}
+                <div class="chart-card overflow-hidden">
+                    <div class="mb-4">
+                        <p class="chart-title">Rincian Per Tanggal</p>
+                        <p class="chart-sub">Durasi per hari per jabatan (menit)</p>
+                    </div>
+                    <div class="overflow-y-auto max-h-[380px]" id="detailTableContainer">
+                        <table class="w-full text-xs">
+                            <thead class="bg-gray-50 sticky top-0">
+                                <tr>
+                                    <th class="text-left px-3 py-2 font-semibold text-gray-700">KA</th>
+                                    <th class="text-left px-3 py-2 font-semibold text-[#FC5D02]">Polsuska</th>
+                                    <th class="text-left px-3 py-2 font-semibold text-[#041C4D]">Kondektur</th>
+                                    <th class="text-left px-3 py-2 font-semibold text-[#1767E8]">TKA</th>
+                                </tr>
+                            </thead>
+                            <tbody id="detailTableBody" class="divide-y divide-gray-100">
+                                {{-- Populated by JS --}}
+                            </tbody>
+                        </table>
+                        <div id="noDataMessage" class="hidden text-center py-8 text-gray-400 text-sm">
+                            Tidak ada data untuk periode ini
+                        </div>
+                    </div>
+                </div>
+
             </div>
 
         </div>
     @else
-        {{-- Redirect or show unauthorized message if needed --}}
         <script>
             window.location = "{{ route('dashboard') }}";
         </script>
@@ -154,37 +191,48 @@
 
 @push('js')
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.5.0/chart.umd.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3.0.1/dist/chartjs-plugin-annotation.min.js">
+    </script>
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
 
-            // ── Real Data from Controller (mutable for polling) ──
+            // ── Real Data from Controller ──
             let chartData = @json($chartData);
 
-            // ── Filter Parameters for AJAX ──
-            const startDate = "{{ $startDate }}";
-            const endDate = "{{ $endDate }}";
-            const trainId = "{{ $trainId ?? '' }}";
+            // ── Filter Parameters ──
+            let startDate = "{{ $startDate }}";
+            let endDate = "{{ $endDate }}";
+            let trainId = "{{ $trainId ?? '' }}";
 
-            // ── Warna dataset (senada palet KAI) ──
+            // ── Colors ──
             const colors = {
                 polsuska: {
-                    bg: '#FC5D02',
-                    border: '#FC5D02'
+                    bg: '#FC5D02'
                 },
                 kondektur: {
-                    bg: '#041C4D',
-                    border: '#041C4D'
+                    bg: '#041C4D'
                 },
                 tka: {
-                    bg: '#1767E8',
-                    border: '#1767E8'
+                    bg: '#1767E8'
                 },
             };
 
-            // ── Load & Resize Icons for Legend ──
-            const iconSize = 25; // Desired size in pixels
+            // ── Limit Line Value ──
+            const LIMIT_MINUTES = 30;
+
+            // ── Format Duration: >60m becomes hours ──
+            function formatDuration(mins) {
+                if (mins >= 60) {
+                    const hours = Math.floor(mins / 60);
+                    const remainMins = mins % 60;
+                    return remainMins > 0 ? `${hours}j ${remainMins}m` : `${hours}j`;
+                }
+                return `${mins}m`;
+            }
+
+            // ── Load Icons ──
+            const iconSize = 25;
 
             function createResizedIcon(src) {
                 const img = new Image();
@@ -193,10 +241,9 @@
                 canvas.width = iconSize;
                 canvas.height = iconSize;
                 const ctx = canvas.getContext('2d');
-
                 img.onload = function() {
                     ctx.drawImage(img, 0, 0, iconSize, iconSize);
-                    scanChart.update(); // Refresh chart when image loads
+                    rerataChart.update();
                 };
                 return canvas;
             }
@@ -206,9 +253,9 @@
             const tkaIcon = createResizedIcon("{{ asset('assets/images/profile/TKA_icons.png') }}");
 
             // ── Init Chart ──
-            const ctx = document.getElementById('scanKAChart').getContext('2d');
+            const ctx = document.getElementById('rerataKelilingChart').getContext('2d');
 
-            const scanChart = new Chart(ctx, {
+            const rerataChart = new Chart(ctx, {
                 type: 'bar',
                 data: {
                     labels: chartData.labels,
@@ -217,7 +264,6 @@
                             data: chartData.polsuska,
                             backgroundColor: colors.polsuska.bg,
                             borderRadius: 4,
-                            borderSkipped: false,
                             pointStyle: polsuskaIcon,
                         },
                         {
@@ -225,7 +271,6 @@
                             data: chartData.kondektur,
                             backgroundColor: colors.kondektur.bg,
                             borderRadius: 4,
-                            borderSkipped: false,
                             pointStyle: kondekturIcon,
                         },
                         {
@@ -233,7 +278,6 @@
                             data: chartData.tka,
                             backgroundColor: colors.tka.bg,
                             borderRadius: 4,
-                            borderSkipped: false,
                             pointStyle: tkaIcon,
                         },
                     ]
@@ -242,9 +286,8 @@
                     responsive: true,
                     maintainAspectRatio: false,
                     interaction: {
-                        mode: 'nearest',
-                        axis: 'x',
-                        intersect: true
+                        mode: 'index',
+                        intersect: false
                     },
                     plugins: {
                         legend: {
@@ -273,29 +316,34 @@
                             },
                             padding: 12,
                             cornerRadius: 6,
-                            displayColors: true,
-                            boxPadding: 6,
                             callbacks: {
                                 label: function(context) {
                                     let label = context.dataset.label || '';
                                     let value = context.parsed.y;
-                                    let dateIndex = context.dataIndex;
-                                    let details = [];
-
-                                    // Get details based on dataset label
-                                    if (label === 'Polsuska') {
-                                        details = chartData.polsuskaDetails[dateIndex] || [];
-                                    } else if (label === 'Kondektur') {
-                                        details = chartData.kondekturDetails[dateIndex] || [];
-                                    } else if (label === 'TKA') {
-                                        details = chartData.tkaDetails[dateIndex] || [];
-                                    }
-
-                                    // Format: "Role: TrainA(1): 5, TrainB(2): 3"
-                                    if (details.length > 0) {
-                                        return label + ': ' + details.join(', ');
-                                    } else {
-                                        return label + ': ' + value;
+                                    let suffix = value > LIMIT_MINUTES ? ' ⚠️ OVER LIMIT!' : '';
+                                    return label + ': ' + formatDuration(value) + suffix;
+                                }
+                            }
+                        },
+                        annotation: {
+                            annotations: {
+                                limitLine: {
+                                    type: 'line',
+                                    yMin: LIMIT_MINUTES,
+                                    yMax: LIMIT_MINUTES,
+                                    borderColor: '#dc2626',
+                                    borderWidth: 2,
+                                    borderDash: [6, 4],
+                                    label: {
+                                        display: true,
+                                        content: 'Limit 30m',
+                                        position: 'end',
+                                        backgroundColor: '#dc2626',
+                                        color: '#fff',
+                                        font: {
+                                            size: 10,
+                                            weight: 'bold'
+                                        }
                                     }
                                 }
                             }
@@ -303,20 +351,24 @@
                     },
                     scales: {
                         x: {
+                            stacked: false,
                             grid: {
                                 display: false
                             },
                             ticks: {
                                 color: '#64748b',
                                 font: {
-                                    size: 11,
+                                    size: 10,
                                     weight: '600'
                                 },
-                                maxRotation: 0
+                                maxRotation: 45,
+                                minRotation: 45
                             }
                         },
                         y: {
+                            stacked: false,
                             beginAtZero: true,
+                            suggestedMax: 45,
                             grid: {
                                 color: '#f1f5f9',
                                 drawBorder: false
@@ -326,7 +378,18 @@
                                 font: {
                                     size: 11
                                 },
-                                precision: 0
+                                callback: function(value) {
+                                    return value + 'm';
+                                }
+                            },
+                            title: {
+                                display: true,
+                                text: 'Durasi (Menit)',
+                                color: '#64748b',
+                                font: {
+                                    size: 12,
+                                    weight: '600'
+                                }
                             }
                         }
                     }
@@ -334,48 +397,100 @@
             });
 
             // ==========================================
-            // AJAX POLLING (Update tiap 5 detik)
+            // Detail Table Population
             // ==========================================
+            const detailTableBody = document.getElementById('detailTableBody');
+            const noDataMessage = document.getElementById('noDataMessage');
 
-            // Store last data for comparison
+            function formatDetails(details) {
+                return details.map(d => {
+                    // Parse "04 Feb: 90m" format
+                    const parts = d.split(': ');
+                    const dateStr = parts[0];
+                    const mins = parseInt(parts[1]);
+                    const isOver = mins > LIMIT_MINUTES;
+                    const formatted = dateStr + ': ' + formatDuration(mins);
+                    return isOver ? `<span class="over-limit">${formatted}</span>` : formatted;
+                }).join('<br>') || '-';
+            }
+
+            function populateDetailTable(data) {
+                detailTableBody.innerHTML = '';
+
+                if (!data.labels || data.labels.length === 0) {
+                    noDataMessage.classList.remove('hidden');
+                    return;
+                }
+                noDataMessage.classList.add('hidden');
+
+                data.labels.forEach((trainLabel, index) => {
+                    const polDetails = formatDetails(data.polsuskaDetails[index] || []);
+                    const konDetails = formatDetails(data.kondekturDetails[index] || []);
+                    const tkaDetails = formatDetails(data.tkaDetails[index] || []);
+
+                    const row = document.createElement('tr');
+                    row.className = 'hover:bg-gray-50';
+                    row.innerHTML = `
+                        <td class="px-3 py-2 font-medium text-gray-800 align-top">${trainLabel}</td>
+                        <td class="px-3 py-2 text-gray-600 align-top">${polDetails}</td>
+                        <td class="px-3 py-2 text-gray-600 align-top">${konDetails}</td>
+                        <td class="px-3 py-2 text-gray-600 align-top">${tkaDetails}</td>
+                    `;
+                    detailTableBody.appendChild(row);
+                });
+            }
+
+            populateDetailTable(chartData);
+
+            // ==========================================
+            // AJAX POLLING
+            // ==========================================
             let lastChartDataJson = JSON.stringify(chartData);
 
-            function fetchScanKAStats() {
+            function fetchRerataKelilingStats() {
                 const params = new URLSearchParams({
                     start_date: startDate,
                     end_date: endDate,
                     train_id: trainId
                 });
 
-                fetch("{{ route('dashboard.scanKA.stats') }}?" + params.toString())
+                fetch("{{ route('dashboard.rerataKeliling.stats') }}?" + params.toString())
                     .then(response => response.json())
                     .then(data => {
-                        // Compare new data with last data
                         const newChartDataJson = JSON.stringify(data);
 
-                        // Only update if data has changed
                         if (newChartDataJson === lastChartDataJson) {
-                            return; // Skip update
+                            return;
                         }
 
-                        console.log('Data changed! Updating chart...');
+                        console.log('Data changed! Updating chart and table...');
                         lastChartDataJson = newChartDataJson;
-
-                        // Update chartData reference for tooltip callbacks
                         chartData = data;
 
-                        // Update chart data
-                        scanChart.data.labels = data.labels;
-                        scanChart.data.datasets[0].data = data.polsuska;
-                        scanChart.data.datasets[1].data = data.kondektur;
-                        scanChart.data.datasets[2].data = data.tka;
-                        scanChart.update();
+                        rerataChart.data.labels = data.labels;
+                        rerataChart.data.datasets[0].data = data.polsuska;
+                        rerataChart.data.datasets[1].data = data.kondektur;
+                        rerataChart.data.datasets[2].data = data.tka;
+                        rerataChart.update();
+
+                        populateDetailTable(data);
                     })
-                    .catch(error => console.error('Error Polling ScanKA:', error));
+                    .catch(error => console.error('Error Polling Rerata Keliling:', error));
             }
 
-            // Jalankan polling setiap 5000ms (5 Detik)
-            setInterval(fetchScanKAStats, 5000);
+            setInterval(fetchRerataKelilingStats, 5000);
+
+            // ==========================================
+            // Live filter
+            // ==========================================
+            document.getElementById('filterForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+                startDate = document.getElementById('startDate').value;
+                endDate = document.getElementById('endDate').value;
+                trainId = document.getElementById('selectKA').value;
+                lastChartDataJson = null;
+                fetchRerataKelilingStats();
+            });
         });
     </script>
 @endpush

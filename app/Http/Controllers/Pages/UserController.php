@@ -30,6 +30,15 @@ class UserController extends Controller
     }
 
     /**
+     * API endpoint for realtime online status polling
+     */
+    public function getOnlineStatus()
+    {
+        $users = User::select('id', 'is_online')->get();
+        return response()->json($users);
+    }
+
+    /**
      * Show the form for creating a new resource.
      */
     public function create()

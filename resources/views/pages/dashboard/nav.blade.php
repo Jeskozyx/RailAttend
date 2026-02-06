@@ -11,12 +11,12 @@
         class="px-4 py-2 text-sm font-semibold rounded-lg transition-all duration-200 {{ request()->routeIs('dashboard.scanPerDinas') ? 'bg-[#001D4B] text-white' : 'text-gray-600 hover:bg-[#001D4B] hover:text-white' }}">
         Scan Per Dinas
     </a>
-    <a href="#"
-        class="px-4 py-2 text-sm font-semibold rounded-lg transition-all duration-200 text-gray-600 hover:bg-[#001D4B] hover:text-white">
+    <a href="{{ route('dashboard.periodeKeliling') }}"
+        class="px-4 py-2 text-sm font-semibold rounded-lg transition-all duration-200 {{ request()->routeIs('dashboard.periodeKeliling') ? 'bg-[#001D4B] text-white' : 'text-gray-600 hover:bg-[#001D4B] hover:text-white' }}">
         Periode Keliling
     </a>
-    <a href="#"
-        class="px-4 py-2 text-sm font-semibold rounded-lg transition-all duration-200 text-gray-600 hover:bg-[#001D4B] hover:text-white">
+    <a href="{{ route('dashboard.rerataKeliling') }}"
+        class="px-4 py-2 text-sm font-semibold rounded-lg transition-all duration-200 {{ request()->routeIs('dashboard.rerataKeliling') ? 'bg-[#001D4B] text-white' : 'text-gray-600 hover:bg-[#001D4B] hover:text-white' }}">
         Rata-rata Keliling
     </a>
 </nav>

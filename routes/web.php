@@ -13,11 +13,21 @@ Route::get('/', [LoginController::class, 'index'])->name('login');
 Route::post('/login', [LoginController::class, 'login'])->name('login.post');
 Route::get('/scanKA', [DashboardController::class, 'scanKA'])->name('dashboard.scanKA');
 Route::get('/scanPerDinas', [DashboardController::class, 'scanPerDinas'])->name('dashboard.scanPerDinas');
+Route::get('/periodeKeliling', [DashboardController::class, 'periodeKeliling'])->name('dashboard.periodeKeliling');
+Route::get('/rerataKeliling', [DashboardController::class, 'rerataKeliling'])->name('dashboard.rerataKeliling');
 
 Route::middleware(['auth'])->group(function() {
     
     Route::get('/logout', [LoginController::class, 'logout'])->name('logout');
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+
+    // === TAMBAHAN BARU: Route untuk AJAX Polling ===
+    Route::get('/dashboard/api-stats', [DashboardController::class, 'getStats'])->name('dashboard.stats');
+    Route::get('/dashboard/api-scan-ka', [DashboardController::class, 'getScanKAStats'])->name('dashboard.scanKA.stats');
+    Route::get('/dashboard/api-scan-dinas', [DashboardController::class, 'getScanPerDinasStats'])->name('dashboard.scanPerDinas.stats');
+    Route::get('/dashboard/api-periode-keliling', [DashboardController::class, 'getPeriodeKelilingStats'])->name('dashboard.periodeKeliling.stats');
+    Route::get('/dashboard/api-rerata-keliling', [DashboardController::class, 'getRerataKelilingStats'])->name('dashboard.rerataKeliling.stats');
+    // ===============================================
 
 
     Route::prefix('role')->group(function () {
@@ -31,6 +41,7 @@ Route::middleware(['auth'])->group(function() {
 
     Route::prefix('user')->group(function () {
         Route::get('/', [UserController::class, 'index'])->name('user.index');
+        Route::get('/api-online-status', [UserController::class, 'getOnlineStatus'])->name('user.onlineStatus');
         Route::get('/create', [UserController::class, 'create'])->name('user.create');
         Route::post('/store', [UserController::class, 'store'])->name('user.store');
         Route::get('/{id}/edit', [UserController::class, 'edit'])->name('user.edit');

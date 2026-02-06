@@ -39,6 +39,10 @@ class LoginController extends Controller
                 Auth::login($user);
                 $request->session()->regenerate();
                 
+                // Mark user as online
+                $user->is_online = true;
+                $user->save();
+                
                 return redirect()->route('dashboard');
             } else {
                 return back()->with('status', 'Email/Password Salah.');
@@ -50,6 +54,13 @@ class LoginController extends Controller
 
     public function logout(Request $request) 
     {
+        // Mark user as offline before logout
+        $user = Auth::user();
+        if ($user) {
+            $user->is_online = false;
+            $user->save();
+        }
+
         Auth::logout();
         $request->session()->invalidate();
         $request->session()->regenerateToken();
