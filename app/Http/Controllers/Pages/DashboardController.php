@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\Auth;
 use App\Models\User;
 use App\Models\Rangkaian;
 use Illuminate\Support\Facades\DB;
+use Spatie\Permission\Models\Role;
 
 class DashboardController extends Controller
 {
@@ -53,38 +54,30 @@ class DashboardController extends Controller
             })->values();
             $chartTrainTypeValues = $trainScanStats->pluck('total')->values();
 
-            // 3. Scan Frequency Chart Data (By Role)
-            // Join scan_reports -> users -> roles
+            // 3. Scan Frequency Chart Data (By Role) - DYNAMIC
+            // Get all non-Admin roles from database
+            $allRoles = Role::where('name', '!=', 'Admin')->orderBy('name')->get();
+            
+            // Get scan stats per role
             $scanStats = DB::table('scan_reports')
                 ->join('users', 'scan_reports.user_id', '=', 'users.id')
                 ->join('model_has_roles', 'users.id', '=', 'model_has_roles.model_id')
                 ->join('roles', 'model_has_roles.role_id', '=', 'roles.id')
-                ->where('scan_reports.status', 'completed') // Only count submitted reports
+                ->where('scan_reports.status', 'completed')
                 ->select('roles.name', DB::raw('count(*) as total'))
                 ->groupBy('roles.name')
                 ->pluck('total', 'name');
+
+            // Build dynamic chart data
+            $chartPieLabels = [];
+            $chartPieValues = [];
+            $chartPieColors = [];
             
-            // dd($scanStats);
-
-            // Map DB role names to Chart Labels
-            $chartPieLabels = ['Polsuska', 'Kondektur', 'TKA'];
-            $counts = ['Polsuska' => 0, 'Kondektur' => 0, 'TKA' => 0];
-
-            // \Illuminate\Support\Facades\Log::info('ScanStats Raw:', $scanStats->toArray());
-
-            foreach($scanStats as $roleName => $count) {
-                if (stripos($roleName, 'Polsuska') !== false || stripos($roleName, 'Polisi') !== false) {
-                    $counts['Polsuska'] += $count;
-                } elseif (stripos($roleName, 'Kondektur') !== false) {
-                    $counts['Kondektur'] += $count;
-                } elseif (stripos($roleName, 'TKA') !== false || stripos($roleName, 'Teknisi') !== false) {
-                    $counts['TKA'] += $count;
-                }
+            foreach ($allRoles as $role) {
+                $chartPieLabels[] = $role->name; // Full name, no abbreviation
+                $chartPieValues[] = $scanStats[$role->name] ?? 0;
+                $chartPieColors[] = $this->generateRoleColor($role->name);
             }
-            
-            // \Illuminate\Support\Facades\Log::info('Calculated Counts:', $counts);
-
-            $chartPieValues = array_values($counts);
             
             // Calculate percentages for the legend
             $totalScans = array_sum($chartPieValues);
@@ -102,7 +95,9 @@ class DashboardController extends Controller
                 "chartTrainTypeValues",
                 "chartPieLabels",
                 "chartPieValues",
-                "chartPiePercentages"
+                "chartPiePercentages",
+                "chartPieColors",
+                "allRoles"
             ));
         }
     }
@@ -155,48 +150,24 @@ class DashboardController extends Controller
             $labels[] = $date->format('d M Y');
         }
 
-        // 2. Initialize Role Data Arrays & Detail Maps
-        $polsuskaData = array_fill(0, count($dates), 0);
-        $kondekturData = array_fill(0, count($dates), 0);
-        $tkaData = array_fill(0, count($dates), 0);
-
-        // Arrays to hold the string details for the tooltip
-        // access via $polsuskaDetails[$dateIndex] => "TrainA(10): 5, TrainB(20): 3"
-        $polsuskaDetails = array_fill(0, count($dates), []);
-        $kondekturDetails = array_fill(0, count($dates), []);
-        $tkaDetails = array_fill(0, count($dates), []);
-
-        // 3. Map Query Result to Arrays
-        foreach ($data as $row) {
-            $dateIndex = array_search($row->date, $dates);
-            if ($dateIndex !== false) {
-                // Build Detail String: "TrainName(NoKA): Total"
-                $detailStr = $row->train_name . '(' . $row->no_ka . '): ' . $row->total;
-
-                if (stripos($row->role_name, 'Polsuska') !== false || stripos($row->role_name, 'Polisi') !== false) {
-                    $polsuskaData[$dateIndex] += $row->total;
-                    $polsuskaDetails[$dateIndex][] = $detailStr;
-                } elseif (stripos($row->role_name, 'Kondektur') !== false) {
-                    $kondekturData[$dateIndex] += $row->total;
-                    $kondekturDetails[$dateIndex][] = $detailStr;
-                } elseif (stripos($row->role_name, 'TKA') !== false || stripos($row->role_name, 'Teknisi') !== false) {
-                    $tkaData[$dateIndex] += $row->total;
-                    $tkaDetails[$dateIndex][] = $detailStr;
-                }
-            }
-        }
+        // 2. Get dynamic roles and build chart data
+        $roles = $this->getDynamicRoles();
+        $roleChartData = $this->buildDynamicRoleChartData($data, $dates, $roles);
 
         $chartData = [
             'labels' => $labels,
-            'polsuska' => $polsuskaData,
-            'polsuskaDetails' => $polsuskaDetails, 
-            'kondektur' => $kondekturData,
-            'kondekturDetails' => $kondekturDetails,
-            'tka' => $tkaData,
-            'tkaDetails' => $tkaDetails
+            'roles' => $roleChartData['roles'],
+            'datasets' => $roleChartData['datasets']
         ];
 
-        return view('pages.dashboard.scanKA', compact('trains', 'chartData', 'startDate', 'endDate', 'trainId'));
+        // Pass roles to view for dynamic legend rendering
+        $allRoles = Role::where('name', '!=', 'Admin')->orderBy('name')->get();
+        $roleColors = [];
+        foreach ($allRoles as $role) {
+            $roleColors[$role->name] = $this->generateRoleColor($role->name);
+        }
+
+        return view('pages.dashboard.scanKA', compact('trains', 'chartData', 'startDate', 'endDate', 'trainId', 'allRoles', 'roleColors'));
     }
 
     public function scanPerDinas(Request $request)
@@ -313,24 +284,28 @@ class DashboardController extends Controller
         $chartTrainLabels = $trainScanStats->map(fn($i) => $i->name . ' (' . $i->no_ka . ')')->values();
         $chartTrainValues = $trainScanStats->pluck('total')->values();
 
-        // 3. Hitung Pie Chart
+        // 3. Hitung Pie Chart - DYNAMIC
+        $allRoles = Role::where('name', '!=', 'Admin')->orderBy('name')->get();
+        
         $scanStats = DB::table('scan_reports')
             ->join('users', 'scan_reports.user_id', '=', 'users.id')
             ->join('model_has_roles', 'users.id', '=', 'model_has_roles.model_id')
             ->join('roles', 'model_has_roles.role_id', '=', 'roles.id')
-            ->where('scan_reports.status', 'completed') // Only count submitted reports
+            ->where('scan_reports.status', 'completed')
             ->select('roles.name', DB::raw('count(*) as total'))
             ->groupBy('roles.name')
             ->pluck('total', 'name');
 
-        $counts = ['Polsuska' => 0, 'Kondektur' => 0, 'TKA' => 0];
-        foreach($scanStats as $roleName => $count) {
-            if (stripos($roleName, 'Polsuska') !== false || stripos($roleName, 'Polisi') !== false) $counts['Polsuska'] += $count;
-            elseif (stripos($roleName, 'Kondektur') !== false) $counts['Kondektur'] += $count;
-            elseif (stripos($roleName, 'TKA') !== false || stripos($roleName, 'Teknisi') !== false) $counts['TKA'] += $count;
+        $chartPieLabels = [];
+        $chartPieValues = [];
+        $chartPieColors = [];
+        
+        foreach ($allRoles as $role) {
+            $chartPieLabels[] = $role->name;
+            $chartPieValues[] = $scanStats[$role->name] ?? 0;
+            $chartPieColors[] = $this->generateRoleColor($role->name);
         }
 
-        $chartPieValues = array_values($counts);
         $totalScans = array_sum($chartPieValues);
         $chartPiePercentages = array_map(fn($val) => $totalScans > 0 ? round(($val / $totalScans) * 100) : 0, $chartPieValues);
 
@@ -339,7 +314,9 @@ class DashboardController extends Controller
             'totalSarana' => $totalSarana,
             'chartTrainLabels' => $chartTrainLabels,
             'chartTrainValues' => $chartTrainValues,
+            'chartPieLabels' => $chartPieLabels,
             'chartPieValues' => $chartPieValues,
+            'chartPieColors' => $chartPieColors,
             'chartPiePercentages' => $chartPiePercentages
         ]);
     } /**
@@ -386,38 +363,14 @@ class DashboardController extends Controller
             $labels[] = $date->format('d M Y');
         }
 
-        $polsuskaData = array_fill(0, count($dates), 0);
-        $kondekturData = array_fill(0, count($dates), 0);
-        $tkaData = array_fill(0, count($dates), 0);
-        $polsuskaDetails = array_fill(0, count($dates), []);
-        $kondekturDetails = array_fill(0, count($dates), []);
-        $tkaDetails = array_fill(0, count($dates), []);
-
-        foreach ($data as $row) {
-            $dateIndex = array_search($row->date, $dates);
-            if ($dateIndex !== false) {
-                $detailStr = $row->train_name . '(' . $row->no_ka . '): ' . $row->total;
-                if (stripos($row->role_name, 'Polsuska') !== false || stripos($row->role_name, 'Polisi') !== false) {
-                    $polsuskaData[$dateIndex] += $row->total;
-                    $polsuskaDetails[$dateIndex][] = $detailStr;
-                } elseif (stripos($row->role_name, 'Kondektur') !== false) {
-                    $kondekturData[$dateIndex] += $row->total;
-                    $kondekturDetails[$dateIndex][] = $detailStr;
-                } elseif (stripos($row->role_name, 'TKA') !== false || stripos($row->role_name, 'Teknisi') !== false) {
-                    $tkaData[$dateIndex] += $row->total;
-                    $tkaDetails[$dateIndex][] = $detailStr;
-                }
-            }
-        }
+        // Get dynamic roles and build chart data
+        $roles = $this->getDynamicRoles();
+        $roleChartData = $this->buildDynamicRoleChartData($data, $dates, $roles);
 
         return response()->json([
             'labels' => $labels,
-            'polsuska' => $polsuskaData,
-            'polsuskaDetails' => $polsuskaDetails,
-            'kondektur' => $kondekturData,
-            'kondekturDetails' => $kondekturDetails,
-            'tka' => $tkaData,
-            'tkaDetails' => $tkaDetails
+            'roles' => $roleChartData['roles'],
+            'datasets' => $roleChartData['datasets']
         ]);
     }
 
@@ -518,7 +471,14 @@ class DashboardController extends Controller
 
         $chartData = $this->buildPeriodeKelilingData($startDate, $endDate, $trainId);
 
-        return view('pages.dashboard.periodekeliling', compact('trains', 'chartData', 'startDate', 'endDate', 'trainId'));
+        // Pass roles to view for dynamic legend
+        $allRoles = Role::where('name', '!=', 'Admin')->orderBy('name')->get();
+        $roleColors = [];
+        foreach ($allRoles as $role) {
+            $roleColors[$role->name] = $this->generateRoleColor($role->name);
+        }
+
+        return view('pages.dashboard.periodekeliling', compact('trains', 'chartData', 'startDate', 'endDate', 'trainId', 'allRoles', 'roleColors'));
     }
 
     /**
@@ -534,9 +494,9 @@ class DashboardController extends Controller
     }
 
     /**
-     * Build chart data for Periode Keliling
+     * Build chart data for Periode Keliling - DYNAMIC ROLES
      * X-axis: Train Name (No KA)
-     * Datasets: Polsuska, Kondektur, TKA (stacked)
+     * Datasets: Dynamic per role (stacked)
      * Tooltip details: Date-level breakdown
      */
     private function buildPeriodeKelilingData($startDate, $endDate, $trainId = null)
@@ -578,16 +538,26 @@ class DashboardController extends Controller
         }
         sort($trainLabels);
 
-        // Initialize data arrays
-        $polsuskaData = array_fill(0, count($trainLabels), 0);
-        $kondekturData = array_fill(0, count($trainLabels), 0);
-        $tkaData = array_fill(0, count($trainLabels), 0);
+        // Get dynamic roles
+        $roles = $this->getDynamicRoles();
+        
+        // Initialize data arrays per role
+        $datasets = [];
+        $roleInfo = [];
+        foreach ($roles as $roleData) {
+            $roleKey = \Illuminate\Support\Str::slug($roleData['name'], '_');
+            $roleInfo[] = [
+                'name' => $roleData['name'],
+                'key' => $roleKey,
+                'color' => $roleData['color']
+            ];
+            $datasets[$roleKey] = [
+                'data' => array_fill(0, count($trainLabels), 0),
+                'details' => array_fill(0, count($trainLabels), [])
+            ];
+        }
 
-        // Tooltip details: per train, per role, list of "DD MMM: X"
-        $polsuskaDetails = array_fill(0, count($trainLabels), []);
-        $kondekturDetails = array_fill(0, count($trainLabels), []);
-        $tkaDetails = array_fill(0, count($trainLabels), []);
-
+        // Populate data
         foreach ($data as $row) {
             $label = $row->train_name . ' (' . $row->no_ka . ')';
             $trainIndex = array_search($label, $trainLabels);
@@ -597,26 +567,21 @@ class DashboardController extends Controller
             $dateFormatted = \Carbon\Carbon::parse($row->date)->format('d M');
             $detailStr = $dateFormatted . ': ' . $row->total;
 
-            if (stripos($row->role_name, 'Polsuska') !== false || stripos($row->role_name, 'Polisi') !== false) {
-                $polsuskaData[$trainIndex] += $row->total;
-                $polsuskaDetails[$trainIndex][] = $detailStr;
-            } elseif (stripos($row->role_name, 'Kondektur') !== false) {
-                $kondekturData[$trainIndex] += $row->total;
-                $kondekturDetails[$trainIndex][] = $detailStr;
-            } elseif (stripos($row->role_name, 'TKA') !== false || stripos($row->role_name, 'Teknisi') !== false) {
-                $tkaData[$trainIndex] += $row->total;
-                $tkaDetails[$trainIndex][] = $detailStr;
+            // Find matching role (exact match)
+            foreach ($roleInfo as $role) {
+                if ($row->role_name === $role['name']) {
+                    $roleKey = $role['key'];
+                    $datasets[$roleKey]['data'][$trainIndex] += $row->total;
+                    $datasets[$roleKey]['details'][$trainIndex][] = $detailStr;
+                    break;
+                }
             }
         }
 
         return [
             'labels' => $trainLabels,
-            'polsuska' => $polsuskaData,
-            'polsuskaDetails' => $polsuskaDetails,
-            'kondektur' => $kondekturData,
-            'kondekturDetails' => $kondekturDetails,
-            'tka' => $tkaData,
-            'tkaDetails' => $tkaDetails
+            'roles' => $roleInfo,
+            'datasets' => $datasets
         ];
     }
 
@@ -633,7 +598,14 @@ class DashboardController extends Controller
 
         $chartData = $this->buildRerataKelilingData($startDate, $endDate, $trainId);
 
-        return view('pages.dashboard.reratakeliling', compact('trains', 'chartData', 'startDate', 'endDate', 'trainId'));
+        // Pass roles to view for dynamic legend
+        $allRoles = Role::where('name', '!=', 'Admin')->orderBy('name')->get();
+        $roleColors = [];
+        foreach ($allRoles as $role) {
+            $roleColors[$role->name] = $this->generateRoleColor($role->name);
+        }
+
+        return view('pages.dashboard.reratakeliling', compact('trains', 'chartData', 'startDate', 'endDate', 'trainId', 'allRoles', 'roleColors'));
     }
 
     /**
@@ -649,7 +621,7 @@ class DashboardController extends Controller
     }
 
     /**
-     * Build chart data for Rerata Keliling
+     * Build chart data for Rerata Keliling - DYNAMIC ROLES
      * Duration = MAX(created_at) - MIN(created_at) per schedule per user
      */
     private function buildRerataKelilingData($startDate, $endDate, $trainId = null)
@@ -693,16 +665,28 @@ class DashboardController extends Controller
         }
         sort($trainLabels);
 
-        // Initialize data arrays (average duration per train per role)
-        $polsuskaDurations = array_fill(0, count($trainLabels), []);
-        $kondekturDurations = array_fill(0, count($trainLabels), []);
-        $tkaDurations = array_fill(0, count($trainLabels), []);
+        // Get dynamic roles
+        $roles = $this->getDynamicRoles();
+        
+        // Initialize data arrays per role
+        $datasets = [];
+        $durations = [];
+        $roleInfo = [];
+        foreach ($roles as $roleData) {
+            $roleKey = \Illuminate\Support\Str::slug($roleData['name'], '_');
+            $roleInfo[] = [
+                'name' => $roleData['name'],
+                'key' => $roleKey,
+                'color' => $roleData['color']
+            ];
+            $durations[$roleKey] = array_fill(0, count($trainLabels), []);
+            $datasets[$roleKey] = [
+                'data' => array_fill(0, count($trainLabels), 0),
+                'details' => array_fill(0, count($trainLabels), [])
+            ];
+        }
 
-        // Tooltip details
-        $polsuskaDetails = array_fill(0, count($trainLabels), []);
-        $kondekturDetails = array_fill(0, count($trainLabels), []);
-        $tkaDetails = array_fill(0, count($trainLabels), []);
-
+        // Populate data
         foreach ($data as $row) {
             $label = $row->train_name . ' (' . $row->no_ka . ')';
             $trainIndex = array_search($label, $trainLabels);
@@ -712,39 +696,29 @@ class DashboardController extends Controller
             $dateFormatted = \Carbon\Carbon::parse($row->date)->format('d M');
             $detailStr = $dateFormatted . ': ' . $row->duration . 'm';
 
-            if (stripos($row->role_name, 'Polsuska') !== false || stripos($row->role_name, 'Polisi') !== false) {
-                $polsuskaDurations[$trainIndex][] = $row->duration;
-                $polsuskaDetails[$trainIndex][] = $detailStr;
-            } elseif (stripos($row->role_name, 'Kondektur') !== false) {
-                $kondekturDurations[$trainIndex][] = $row->duration;
-                $kondekturDetails[$trainIndex][] = $detailStr;
-            } elseif (stripos($row->role_name, 'TKA') !== false || stripos($row->role_name, 'Teknisi') !== false) {
-                $tkaDurations[$trainIndex][] = $row->duration;
-                $tkaDetails[$trainIndex][] = $detailStr;
+            // Find matching role (exact match)
+            foreach ($roleInfo as $role) {
+                if ($row->role_name === $role['name']) {
+                    $roleKey = $role['key'];
+                    $durations[$roleKey][$trainIndex][] = $row->duration;
+                    $datasets[$roleKey]['details'][$trainIndex][] = $detailStr;
+                    break;
+                }
             }
         }
 
         // Calculate averages
-        $polsuskaAvg = array_map(function($arr) {
-            return count($arr) > 0 ? round(array_sum($arr) / count($arr), 1) : 0;
-        }, $polsuskaDurations);
-
-        $kondekturAvg = array_map(function($arr) {
-            return count($arr) > 0 ? round(array_sum($arr) / count($arr), 1) : 0;
-        }, $kondekturDurations);
-
-        $tkaAvg = array_map(function($arr) {
-            return count($arr) > 0 ? round(array_sum($arr) / count($arr), 1) : 0;
-        }, $tkaDurations);
+        foreach ($roleInfo as $role) {
+            $roleKey = $role['key'];
+            $datasets[$roleKey]['data'] = array_map(function($arr) {
+                return count($arr) > 0 ? round(array_sum($arr) / count($arr), 1) : 0;
+            }, $durations[$roleKey]);
+        }
 
         return [
             'labels' => $trainLabels,
-            'polsuska' => $polsuskaAvg,
-            'polsuskaDetails' => $polsuskaDetails,
-            'kondektur' => $kondekturAvg,
-            'kondekturDetails' => $kondekturDetails,
-            'tka' => $tkaAvg,
-            'tkaDetails' => $tkaDetails
+            'roles' => $roleInfo,
+            'datasets' => $datasets
         ];
     }
 
@@ -775,5 +749,93 @@ class DashboardController extends Controller
                 return strcmp($a->name, $b->name);
             });
         }
+    }
+
+    /**
+     * Generate role color - static for predefined roles, dynamic for new ones
+     */
+    private function generateRoleColor(string $roleName): string
+    {
+        // Static colors for predefined roles
+        $staticColors = [
+            'Polsuska' => '#F75026',
+            'Kondektur' => '#00078A',
+            'Teknisi Kereta Api' => '#1CC8CE',
+        ];
+
+        // Return static color if exists
+        if (isset($staticColors[$roleName])) {
+            return $staticColors[$roleName];
+        }
+
+        // Generate dynamic color for new roles
+        $hash = md5($roleName);
+        $h = hexdec(substr($hash, 0, 2)) % 360;
+        $s = 65 + (hexdec(substr($hash, 2, 2)) % 20); // 65-85%
+        $l = 40 + (hexdec(substr($hash, 4, 2)) % 15); // 40-55%
+        return "hsl($h, {$s}%, {$l}%)";
+    }
+
+    /**
+     * Get all non-Admin roles with their colors
+     */
+    private function getDynamicRoles()
+    {
+        $roles = Role::where('name', '!=', 'Admin')->orderBy('name')->get();
+        $rolesData = [];
+        
+        foreach ($roles as $role) {
+            $rolesData[] = [
+                'name' => $role->name,
+                'color' => $this->generateRoleColor($role->name)
+            ];
+        }
+        
+        return $rolesData;
+    }
+
+    /**
+     * Build dynamic chart data by role (used by multiple methods)
+     */
+    private function buildDynamicRoleChartData($data, $dates, $roles)
+    {
+        $result = [
+            'roles' => [],
+            'datasets' => []
+        ];
+
+        foreach ($roles as $roleData) {
+            $roleName = $roleData['name'];
+            $roleKey = \Illuminate\Support\Str::slug($roleName, '_');
+            
+            $result['roles'][] = [
+                'name' => $roleName,
+                'key' => $roleKey,
+                'color' => $roleData['color']
+            ];
+            
+            $result['datasets'][$roleKey] = [
+                'data' => array_fill(0, count($dates), 0),
+                'details' => array_fill(0, count($dates), [])
+            ];
+        }
+
+        foreach ($data as $row) {
+            $dateIndex = array_search($row->date, $dates);
+            if ($dateIndex === false) continue;
+
+            // Find matching role
+            foreach ($result['roles'] as $roleInfo) {
+                if ($row->role_name === $roleInfo['name']) {
+                    $roleKey = $roleInfo['key'];
+                    $detailStr = $row->train_name . '(' . $row->no_ka . '): ' . $row->total;
+                    $result['datasets'][$roleKey]['data'][$dateIndex] += $row->total;
+                    $result['datasets'][$roleKey]['details'][$dateIndex][] = $detailStr;
+                    break;
+                }
+            }
+        }
+
+        return $result;
     }
 }

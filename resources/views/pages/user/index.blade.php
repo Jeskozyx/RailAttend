@@ -135,9 +135,18 @@
                                         <div class="text-sm text-gray-900">{{ $item->email }}</div>
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap">
+                                        @php
+                                            $role = $item->roles()->first();
+                                            $roleName = $role?->name ?? 'Tidak Ada Jabatan';
+                                            $roleClass = match ($roleName) {
+                                                'Admin' => 'bg-purple-100 text-purple-800',
+                                                'Tidak Ada Jabatan' => 'bg-red-100 text-red-800',
+                                                default => 'bg-blue-100 text-blue-800',
+                                            };
+                                        @endphp
                                         <span
-                                            class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full {{ $item->roles()->first()->name === 'Admin' ? 'bg-purple-100 text-purple-800' : 'bg-blue-100 text-blue-800' }}">
-                                            {{ $item->roles()->first()->name ?? 'User' }}
+                                            class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full {{ $roleClass }}">
+                                            {{ $roleName }}
                                         </span>
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap" data-user-status="{{ $item->id }}">
@@ -328,7 +337,7 @@
                     .then(users => {
                         users.forEach(user => {
                             const statusCell = document.querySelector(
-                            `[data-user-status="${user.id}"]`);
+                                `[data-user-status="${user.id}"]`);
                             if (statusCell) {
                                 if (user.is_online) {
                                     statusCell.innerHTML = `

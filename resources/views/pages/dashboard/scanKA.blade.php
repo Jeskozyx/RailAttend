@@ -140,6 +140,17 @@
                 <div class="canvas-wrap">
                     <canvas id="scanKAChart"></canvas>
                 </div>
+
+                {{-- Dynamic Role Legend --}}
+                <div class="flex items-center justify-center gap-8 mt-6 pt-4 border-t border-gray-100">
+                    @foreach ($allRoles as $role)
+                        <div class="flex items-center gap-2">
+                            <span class="w-3 h-3 rounded-full flex-shrink-0"
+                                style="background-color: {{ $roleColors[$role->name] ?? '#6B7280' }};"></span>
+                            <span class="text-sm font-semibold text-gray-700">{{ $role->name }}</span>
+                        </div>
+                    @endforeach
+                </div>
             </div>
 
         </div>
@@ -167,43 +178,16 @@
             const endDate = "{{ $endDate }}";
             const trainId = "{{ $trainId ?? '' }}";
 
-            // ── Warna dataset (senada palet KAI) ──
-            const colors = {
-                polsuska: {
-                    bg: '#FC5D02',
-                    border: '#FC5D02'
-                },
-                kondektur: {
-                    bg: '#041C4D',
-                    border: '#041C4D'
-                },
-                tka: {
-                    bg: '#1767E8',
-                    border: '#1767E8'
-                },
-            };
-
-            // ── Load & Resize Icons for Legend ──
-            const iconSize = 25; // Desired size in pixels
-
-            function createResizedIcon(src) {
-                const img = new Image();
-                img.src = src;
-                const canvas = document.createElement('canvas');
-                canvas.width = iconSize;
-                canvas.height = iconSize;
-                const ctx = canvas.getContext('2d');
-
-                img.onload = function() {
-                    ctx.drawImage(img, 0, 0, iconSize, iconSize);
-                    scanChart.update(); // Refresh chart when image loads
-                };
-                return canvas;
+            // ── Build dynamic datasets from roles ──
+            function buildDatasets(data) {
+                return data.roles.map(role => ({
+                    label: role.name,
+                    data: data.datasets[role.key]?.data || [],
+                    backgroundColor: role.color,
+                    borderRadius: 4,
+                    borderSkipped: false
+                }));
             }
-
-            const polsuskaIcon = createResizedIcon("{{ asset('assets/images/profile/polsuska_icons.png') }}");
-            const kondekturIcon = createResizedIcon("{{ asset('assets/images/profile/kondektur_icons.png') }}");
-            const tkaIcon = createResizedIcon("{{ asset('assets/images/profile/TKA_icons.png') }}");
 
             // ── Init Chart ──
             const ctx = document.getElementById('scanKAChart').getContext('2d');
@@ -212,31 +196,7 @@
                 type: 'bar',
                 data: {
                     labels: chartData.labels,
-                    datasets: [{
-                            label: 'Polsuska',
-                            data: chartData.polsuska,
-                            backgroundColor: colors.polsuska.bg,
-                            borderRadius: 4,
-                            borderSkipped: false,
-                            pointStyle: polsuskaIcon,
-                        },
-                        {
-                            label: 'Kondektur',
-                            data: chartData.kondektur,
-                            backgroundColor: colors.kondektur.bg,
-                            borderRadius: 4,
-                            borderSkipped: false,
-                            pointStyle: kondekturIcon,
-                        },
-                        {
-                            label: 'TKA',
-                            data: chartData.tka,
-                            backgroundColor: colors.tka.bg,
-                            borderRadius: 4,
-                            borderSkipped: false,
-                            pointStyle: tkaIcon,
-                        },
-                    ]
+                    datasets: buildDatasets(chartData)
                 },
                 options: {
                     responsive: true,
@@ -248,17 +208,7 @@
                     },
                     plugins: {
                         legend: {
-                            display: true,
-                            position: 'bottom',
-                            labels: {
-                                usePointStyle: true,
-                                padding: 20,
-                                font: {
-                                    size: 13,
-                                    weight: '600'
-                                },
-                                color: '#374151'
-                            }
+                            display: false
                         },
                         tooltip: {
                             backgroundColor: 'rgba(30, 41, 59, 0.95)',
@@ -280,23 +230,18 @@
                                     let label = context.dataset.label || '';
                                     let value = context.parsed.y;
                                     let dateIndex = context.dataIndex;
-                                    let details = [];
 
-                                    // Get details based on dataset label
-                                    if (label === 'Polsuska') {
-                                        details = chartData.polsuskaDetails[dateIndex] || [];
-                                    } else if (label === 'Kondektur') {
-                                        details = chartData.kondekturDetails[dateIndex] || [];
-                                    } else if (label === 'TKA') {
-                                        details = chartData.tkaDetails[dateIndex] || [];
+                                    // Find role key for this dataset
+                                    const role = chartData.roles.find(r => r.name === label);
+                                    if (role) {
+                                        const details = chartData.datasets[role.key]?.details?.[
+                                            dateIndex
+                                        ] || [];
+                                        if (details.length > 0) {
+                                            return label + ': ' + details.join(', ');
+                                        }
                                     }
-
-                                    // Format: "Role: TrainA(1): 5, TrainB(2): 3"
-                                    if (details.length > 0) {
-                                        return label + ': ' + details.join(', ');
-                                    } else {
-                                        return label + ': ' + value;
-                                    }
+                                    return label + ': ' + value;
                                 }
                             }
                         }
@@ -358,17 +303,12 @@
                             return; // Skip update
                         }
 
-                        console.log('Data changed! Updating chart...');
                         lastChartDataJson = newChartDataJson;
-
-                        // Update chartData reference for tooltip callbacks
                         chartData = data;
 
-                        // Update chart data
+                        // Rebuild datasets dynamically
                         scanChart.data.labels = data.labels;
-                        scanChart.data.datasets[0].data = data.polsuska;
-                        scanChart.data.datasets[1].data = data.kondektur;
-                        scanChart.data.datasets[2].data = data.tka;
+                        scanChart.data.datasets = buildDatasets(data);
                         scanChart.update();
                     })
                     .catch(error => console.error('Error Polling ScanKA:', error));

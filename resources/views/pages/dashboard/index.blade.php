@@ -275,45 +275,23 @@
                 <canvas id="dinasPieChart"></canvas>
             </div>
 
-            <div class="w-1/2 space-y-3">
-                {{-- Polsuska --}}
-                <div class="flex items-center justify-between group">
-                    <div class="flex items-center">
-                        <img src="{{ asset('assets/images/profile/polsuska_icons.png') }}" alt="Polsuska"
-                            class="w-6 h-6 mr-2 object-contain">
-                        <span class="text-xs font-semibold text-gray-600">Polsuska</span>
+            <div class="w-1/2 space-y-3" id="pie-chart-legend">
+                {{-- Dynamic role legend --}}
+                @foreach ($allRoles as $index => $role)
+                    <div class="flex items-center justify-between group">
+                        <div class="flex items-center">
+                            <span class="w-3 h-3 rounded-full mr-2 flex-shrink-0"
+                                style="background-color: {{ $chartPieColors[$index] ?? '#6B7280' }};"></span>
+                            <span class="text-xs font-semibold text-gray-600">{{ $role->name }}</span>
+                        </div>
+                        <span id="perc-role-{{ $loop->index }}"
+                            class="text-xs font-bold text-gray-900 bg-gray-50 px-2 py-1 rounded">{{ $chartPiePercentages[$index] ?? 0 }}%</span>
                     </div>
-                    {{-- TAMBAHAN: ID="perc-polsuska" --}}
-                    <span id="perc-polsuska"
-                        class="text-xs font-bold text-gray-900 bg-gray-50 px-2 py-1 rounded">{{ $chartPiePercentages[0] ?? 0 }}%</span>
-                </div>
-
-                {{-- Kondektur --}}
-                <div class="flex items-center justify-between group">
-                    <div class="flex items-center">
-                        <img src="{{ asset('assets/images/profile/kondektur_icons.png') }}" alt="Kondektur"
-                            class="w-6 h-6 mr-2 object-contain">
-                        <span class="text-xs font-semibold text-gray-600">Kondektur</span>
-                    </div>
-                    {{-- TAMBAHAN: ID="perc-kondektur" --}}
-                    <span id="perc-kondektur"
-                        class="text-xs font-bold text-gray-900 bg-gray-50 px-2 py-1 rounded">{{ $chartPiePercentages[1] ?? 0 }}%</span>
-                </div>
-
-                {{-- TKA --}}
-                <div class="flex items-center justify-between group">
-                    <div class="flex items-center">
-                        <img src="{{ asset('assets/images/profile/TKA_icons.png') }}" alt="TKA"
-                            class="w-6 h-6 mr-2 object-contain">
-                        <span class="text-xs font-semibold text-gray-600">TKA</span>
-                    </div>
-                    {{-- TAMBAHAN: ID="perc-tka" --}}
-                    <span id="perc-tka"
-                        class="text-xs font-bold text-gray-900 bg-gray-50 px-2 py-1 rounded">{{ $chartPiePercentages[2] ?? 0 }}%</span>
-                </div>
+                @endforeach
             </div>
         </div>
     </div>
+
 </div>
 
 @push('js')
@@ -418,7 +396,7 @@
                     labels: @json($chartPieLabels),
                     datasets: [{
                         data: @json($chartPieValues),
-                        backgroundColor: ['#FC5D02', '#041C4D', '#1767E8'],
+                        backgroundColor: @json($chartPieColors),
                         borderWidth: 0,
                         hoverOffset: 4
                     }]
@@ -461,7 +439,6 @@
                             return; // No change, skip update
                         }
 
-                        // console.log('Data changed! Updating dashboard...'); 
                         lastDashboardData = currentDataJson;
 
                         // A. Update Angka Text (DOM ID)
@@ -471,14 +448,12 @@
                         if (document.getElementById('total-sarana'))
                             document.getElementById('total-sarana').innerText = data.totalSarana;
 
-                        // B. Update Persentase Text
+                        // B. Update Persentase Text (Dynamic)
                         if (data.chartPiePercentages) {
-                            if (document.getElementById('perc-polsuska')) document.getElementById(
-                                'perc-polsuska').innerText = data.chartPiePercentages[0] + '%';
-                            if (document.getElementById('perc-kondektur')) document.getElementById(
-                                'perc-kondektur').innerText = data.chartPiePercentages[1] + '%';
-                            if (document.getElementById('perc-tka')) document.getElementById('perc-tka')
-                                .innerText = data.chartPiePercentages[2] + '%';
+                            data.chartPiePercentages.forEach((perc, index) => {
+                                const el = document.getElementById('perc-role-' + index);
+                                if (el) el.innerText = perc + '%';
+                            });
                         }
 
                         // C. Update Bar Chart
@@ -490,9 +465,11 @@
                             barChartInstance.update();
                         }
 
-                        // D. Update Pie Chart
+                        // D. Update Pie Chart (with dynamic colors)
                         if (pieChartInstance) {
+                            pieChartInstance.data.labels = data.chartPieLabels;
                             pieChartInstance.data.datasets[0].data = data.chartPieValues;
+                            pieChartInstance.data.datasets[0].backgroundColor = data.chartPieColors;
                             pieChartInstance.update();
                         }
                     })

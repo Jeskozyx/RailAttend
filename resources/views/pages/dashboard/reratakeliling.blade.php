@@ -150,6 +150,17 @@
                     <div class="canvas-wrap">
                         <canvas id="rerataKelilingChart"></canvas>
                     </div>
+
+                    {{-- Dynamic Role Legend --}}
+                    <div class="flex items-center justify-center gap-8 mt-6 pt-4 border-t border-gray-100">
+                        @foreach ($allRoles as $role)
+                            <div class="flex items-center gap-2">
+                                <span class="w-3 h-3 rounded-full flex-shrink-0"
+                                    style="background-color: {{ $roleColors[$role->name] ?? '#6B7280' }};"></span>
+                                <span class="text-sm font-semibold text-gray-700">{{ $role->name }}</span>
+                            </div>
+                        @endforeach
+                    </div>
                 </div>
 
                 {{-- RIGHT: Detail Table --}}
@@ -163,9 +174,10 @@
                             <thead class="bg-gray-50 sticky top-0">
                                 <tr>
                                     <th class="text-left px-3 py-2 font-semibold text-gray-700">KA</th>
-                                    <th class="text-left px-3 py-2 font-semibold text-[#FC5D02]">Polsuska</th>
-                                    <th class="text-left px-3 py-2 font-semibold text-[#041C4D]">Kondektur</th>
-                                    <th class="text-left px-3 py-2 font-semibold text-[#1767E8]">TKA</th>
+                                    @foreach ($allRoles as $role)
+                                        <th class="text-left px-3 py-2 font-semibold"
+                                            style="color: {{ $roleColors[$role->name] ?? '#6B7280' }};">{{ $role->name }}</th>
+                                    @endforeach
                                 </tr>
                             </thead>
                             <tbody id="detailTableBody" class="divide-y divide-gray-100">
@@ -205,19 +217,6 @@
             let endDate = "{{ $endDate }}";
             let trainId = "{{ $trainId ?? '' }}";
 
-            // ── Colors ──
-            const colors = {
-                polsuska: {
-                    bg: '#FC5D02'
-                },
-                kondektur: {
-                    bg: '#041C4D'
-                },
-                tka: {
-                    bg: '#1767E8'
-                },
-            };
-
             // ── Limit Line Value ──
             const LIMIT_MINUTES = 30;
 
@@ -231,26 +230,15 @@
                 return `${mins}m`;
             }
 
-            // ── Load Icons ──
-            const iconSize = 25;
-
-            function createResizedIcon(src) {
-                const img = new Image();
-                img.src = src;
-                const canvas = document.createElement('canvas');
-                canvas.width = iconSize;
-                canvas.height = iconSize;
-                const ctx = canvas.getContext('2d');
-                img.onload = function() {
-                    ctx.drawImage(img, 0, 0, iconSize, iconSize);
-                    rerataChart.update();
-                };
-                return canvas;
+            // ── Build dynamic datasets from roles ──
+            function buildDatasets(data) {
+                return data.roles.map(role => ({
+                    label: role.name,
+                    data: data.datasets[role.key]?.data || [],
+                    backgroundColor: role.color,
+                    borderRadius: 4
+                }));
             }
-
-            const polsuskaIcon = createResizedIcon("{{ asset('assets/images/profile/polsuska_icons.png') }}");
-            const kondekturIcon = createResizedIcon("{{ asset('assets/images/profile/kondektur_icons.png') }}");
-            const tkaIcon = createResizedIcon("{{ asset('assets/images/profile/TKA_icons.png') }}");
 
             // ── Init Chart ──
             const ctx = document.getElementById('rerataKelilingChart').getContext('2d');
@@ -259,28 +247,7 @@
                 type: 'bar',
                 data: {
                     labels: chartData.labels,
-                    datasets: [{
-                            label: 'Polsuska',
-                            data: chartData.polsuska,
-                            backgroundColor: colors.polsuska.bg,
-                            borderRadius: 4,
-                            pointStyle: polsuskaIcon,
-                        },
-                        {
-                            label: 'Kondektur',
-                            data: chartData.kondektur,
-                            backgroundColor: colors.kondektur.bg,
-                            borderRadius: 4,
-                            pointStyle: kondekturIcon,
-                        },
-                        {
-                            label: 'TKA',
-                            data: chartData.tka,
-                            backgroundColor: colors.tka.bg,
-                            borderRadius: 4,
-                            pointStyle: tkaIcon,
-                        },
-                    ]
+                    datasets: buildDatasets(chartData)
                 },
                 options: {
                     responsive: true,
@@ -291,17 +258,7 @@
                     },
                     plugins: {
                         legend: {
-                            display: true,
-                            position: 'bottom',
-                            labels: {
-                                usePointStyle: true,
-                                padding: 20,
-                                font: {
-                                    size: 13,
-                                    weight: '600'
-                                },
-                                color: '#374151'
-                            }
+                            display: false
                         },
                         tooltip: {
                             backgroundColor: 'rgba(30, 41, 59, 0.95)',
@@ -397,7 +354,7 @@
             });
 
             // ==========================================
-            // Detail Table Population
+            // Detail Table Population - DYNAMIC ROLES
             // ==========================================
             const detailTableBody = document.getElementById('detailTableBody');
             const noDataMessage = document.getElementById('noDataMessage');
@@ -424,18 +381,22 @@
                 noDataMessage.classList.add('hidden');
 
                 data.labels.forEach((trainLabel, index) => {
-                    const polDetails = formatDetails(data.polsuskaDetails[index] || []);
-                    const konDetails = formatDetails(data.kondekturDetails[index] || []);
-                    const tkaDetails = formatDetails(data.tkaDetails[index] || []);
-
                     const row = document.createElement('tr');
                     row.className = 'hover:bg-gray-50';
-                    row.innerHTML = `
-                        <td class="px-3 py-2 font-medium text-gray-800 align-top">${trainLabel}</td>
-                        <td class="px-3 py-2 text-gray-600 align-top">${polDetails}</td>
-                        <td class="px-3 py-2 text-gray-600 align-top">${konDetails}</td>
-                        <td class="px-3 py-2 text-gray-600 align-top">${tkaDetails}</td>
-                    `;
+
+                    // Start with train label column
+                    let rowHtml =
+                        `<td class="px-3 py-2 font-medium text-gray-800 align-top">${trainLabel}</td>`;
+
+                    // Add column for each role dynamically
+                    data.roles.forEach(role => {
+                        const roleDetails = formatDetails(data.datasets[role.key]?.details?.[
+                            index] || []);
+                        rowHtml +=
+                            `<td class="px-3 py-2 text-gray-600 align-top">${roleDetails}</td>`;
+                    });
+
+                    row.innerHTML = rowHtml;
                     detailTableBody.appendChild(row);
                 });
             }
@@ -463,14 +424,12 @@
                             return;
                         }
 
-                        console.log('Data changed! Updating chart and table...');
                         lastChartDataJson = newChartDataJson;
                         chartData = data;
 
+                        // Update chart with dynamic datasets
                         rerataChart.data.labels = data.labels;
-                        rerataChart.data.datasets[0].data = data.polsuska;
-                        rerataChart.data.datasets[1].data = data.kondektur;
-                        rerataChart.data.datasets[2].data = data.tka;
+                        rerataChart.data.datasets = buildDatasets(data);
                         rerataChart.update();
 
                         populateDetailTable(data);
