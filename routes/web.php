@@ -2,31 +2,38 @@
 
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Pages\DashboardController;
+use App\Http\Controllers\Pages\Dashboard\ScanKAController;
+use App\Http\Controllers\Pages\Dashboard\ScanPerDinasController;
+use App\Http\Controllers\Pages\Dashboard\PeriodeKelilingController;
+use App\Http\Controllers\Pages\Dashboard\RerataKelilingController;
 use App\Http\Controllers\Pages\RoleController;
 use App\Http\Controllers\Pages\UserController;
 use App\Http\Controllers\Pages\TrainsController;
 use App\Http\Controllers\Pages\ScheduleController;
 use App\Http\Controllers\Pages\RangkaianController;
+use App\Http\Controllers\Pages\RekapController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', [LoginController::class, 'index'])->name('login');
 Route::post('/login', [LoginController::class, 'login'])->name('login.post');
-Route::get('/scanKA', [DashboardController::class, 'scanKA'])->name('dashboard.scanKA');
-Route::get('/scanPerDinas', [DashboardController::class, 'scanPerDinas'])->name('dashboard.scanPerDinas');
-Route::get('/periodeKeliling', [DashboardController::class, 'periodeKeliling'])->name('dashboard.periodeKeliling');
-Route::get('/rerataKeliling', [DashboardController::class, 'rerataKeliling'])->name('dashboard.rerataKeliling');
+
+// Dashboard Sub-pages (public)
+Route::get('/scanKA', [ScanKAController::class, 'index'])->name('dashboard.scanKA');
+Route::get('/scanPerDinas', [ScanPerDinasController::class, 'index'])->name('dashboard.scanPerDinas');
+Route::get('/periodeKeliling', [PeriodeKelilingController::class, 'index'])->name('dashboard.periodeKeliling');
+Route::get('/rerataKeliling', [RerataKelilingController::class, 'index'])->name('dashboard.rerataKeliling');
 
 Route::middleware(['auth'])->group(function() {
     
     Route::get('/logout', [LoginController::class, 'logout'])->name('logout');
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
-    // === TAMBAHAN BARU: Route untuk AJAX Polling ===
+    // === Dashboard API Routes for AJAX Polling ===
     Route::get('/dashboard/api-stats', [DashboardController::class, 'getStats'])->name('dashboard.stats');
-    Route::get('/dashboard/api-scan-ka', [DashboardController::class, 'getScanKAStats'])->name('dashboard.scanKA.stats');
-    Route::get('/dashboard/api-scan-dinas', [DashboardController::class, 'getScanPerDinasStats'])->name('dashboard.scanPerDinas.stats');
-    Route::get('/dashboard/api-periode-keliling', [DashboardController::class, 'getPeriodeKelilingStats'])->name('dashboard.periodeKeliling.stats');
-    Route::get('/dashboard/api-rerata-keliling', [DashboardController::class, 'getRerataKelilingStats'])->name('dashboard.rerataKeliling.stats');
+    Route::get('/dashboard/api-scan-ka', [ScanKAController::class, 'getStats'])->name('dashboard.scanKA.stats');
+    Route::get('/dashboard/api-scan-dinas', [ScanPerDinasController::class, 'getStats'])->name('dashboard.scanPerDinas.stats');
+    Route::get('/dashboard/api-periode-keliling', [PeriodeKelilingController::class, 'getStats'])->name('dashboard.periodeKeliling.stats');
+    Route::get('/dashboard/api-rerata-keliling', [RerataKelilingController::class, 'getStats'])->name('dashboard.rerataKeliling.stats');
     // ===============================================
 
 
@@ -80,4 +87,9 @@ Route::middleware(['auth'])->group(function() {
     Route::get('/verifikasi/{schedule_id}/{rangkaian_id}', [ScheduleController::class, 'verifikasi'])->name('kondektur.verifikasi');
 
     Route::post('/kondektur/submit-report', [ScheduleController::class, 'submitReport'])->name('kondektur.submit_report');
+
+    // Rekap Routes
+    Route::prefix('rekap')->group(function () {
+        Route::get('/', [RekapController::class, 'index'])->name('rekap.index');
+    });
 });
