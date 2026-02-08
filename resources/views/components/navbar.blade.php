@@ -219,15 +219,9 @@
                         </div>
 
                         <div
-                            class="h-10 w-10 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white font-bold shadow-lg">
-                            @php
-                                $nameParts = explode(' ', Auth::user()->name);
-                                $initials = strtoupper(substr($nameParts[0], 0, 1));
-                                if (count($nameParts) > 1) {
-                                    $initials .= strtoupper(substr($nameParts[1], 0, 1));
-                                }
-                            @endphp
-                            {{ $initials }}
+                            class="h-10 w-10 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white font-bold shadow-lg overflow-hidden">
+                            <img src="{{ Auth::user()->avatar_url }}" alt="User Avatar"
+                                class="h-full w-full object-cover">
                         </div>
 
                         <svg class="h-4 w-4 fill-current text-white transition-transform duration-200"
@@ -255,14 +249,16 @@
                             <p class="text-xs text-gray-500">{{ Auth::user()->roles->first()->name ?? 'User' }}</p>
                         </div>
 
-                        <a href="#"
-                            class="flex items-center space-x-3 px-4 py-3 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-700 transition-colors">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                            </svg>
-                            <span>Profile Saya</span>
-                        </a>
+                        @unlessrole('Admin')
+                            <a href="{{ route('profile.edit') }}"
+                                class="flex items-center space-x-3 px-4 py-3 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-700 transition-colors">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                </svg>
+                                <span>Profile Saya</span>
+                            </a>
+                        @endunless
 
                         <a href="#"
                             class="flex items-center space-x-3 px-4 py-3 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-700 transition-colors">

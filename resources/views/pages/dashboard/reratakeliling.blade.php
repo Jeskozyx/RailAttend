@@ -108,8 +108,8 @@
             {{-- Header --}}
             <div class="mb-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                 <div class="flex flex-col justify-center">
-                    <h1 class="text-3xl font-bold text-gray-900">Rata-rata Keliling</h1>
-                    <p class="mt-1 text-sm text-gray-500">Durasi scan per kereta (menit) - Limit: 30 menit</p>
+                    <h1 class="text-3xl font-bold text-gray-900">Rata-rata Jarak Waktu</h1>
+                    <p class="mt-1 text-sm text-gray-500">Rerata gap antar scan per kereta (exclude start sesi)</p>
                 </div>
 
                 @include('pages.dashboard.nav')
@@ -143,8 +143,8 @@
                 <div class="lg:col-span-2 chart-card">
                     <div class="flex items-center justify-between mb-4">
                         <div>
-                            <p class="chart-title">Durasi Keliling Per Kereta</p>
-                            <p class="chart-sub">Garis merah = Limit 30 menit</p>
+                            <p class="chart-title">Rerata Jarak Waktu per Kereta</p>
+                            <p class="chart-sub">Semakin rendah semakin cepat rotasi</p>
                         </div>
                     </div>
                     <div class="canvas-wrap">
@@ -218,16 +218,16 @@
             let trainId = "{{ $trainId ?? '' }}";
 
             // ── Limit Line Value ──
-            const LIMIT_MINUTES = 30;
+            const LIMIT_MINUTES = 30; // Still useful for reference? Or maybe 60 mins?
 
             // ── Format Duration: >60m becomes hours ──
             function formatDuration(mins) {
                 if (mins >= 60) {
                     const hours = Math.floor(mins / 60);
-                    const remainMins = mins % 60;
+                    const remainMins = Math.round(mins % 60);
                     return remainMins > 0 ? `${hours}j ${remainMins}m` : `${hours}j`;
                 }
-                return `${mins}m`;
+                return `${Math.round(mins)}m`;
             }
 
             // ── Build dynamic datasets from roles ──
@@ -277,8 +277,16 @@
                                 label: function(context) {
                                     let label = context.dataset.label || '';
                                     let value = context.parsed.y;
-                                    let suffix = value > LIMIT_MINUTES ? ' ⚠️ OVER LIMIT!' : '';
-                                    return label + ': ' + formatDuration(value) + suffix;
+                                    // Custom tooltip logic for "Average Gap"
+                                    // Shows: "Role: 45m (3 Users)"
+                                    let trainIndex = context.dataIndex;
+                                    let roleKey = chartData.roles.find(r => r.name === label)?.key;
+                                    let details = chartData.datasets[roleKey]?.details?.[trainIndex] ||
+                                        [];
+                                    let userCountStr = details[0] || '';
+
+                                    return label + ': ' + formatDuration(value) + ' (' + userCountStr +
+                                        ')';
                                 }
                             }
                         },
@@ -286,14 +294,14 @@
                             annotations: {
                                 limitLine: {
                                     type: 'line',
-                                    yMin: LIMIT_MINUTES,
-                                    yMax: LIMIT_MINUTES,
+                                    yMin: 60, // Maybe 60 mins as a "slow" threshold?
+                                    yMax: 60,
                                     borderColor: '#dc2626',
                                     borderWidth: 2,
                                     borderDash: [6, 4],
                                     label: {
                                         display: true,
-                                        content: 'Limit 30m',
+                                        content: 'Ref 1 Jam',
                                         position: 'end',
                                         backgroundColor: '#dc2626',
                                         color: '#fff',
@@ -325,7 +333,7 @@
                         y: {
                             stacked: false,
                             beginAtZero: true,
-                            suggestedMax: 45,
+                            suggestedMax: 60,
                             grid: {
                                 color: '#f1f5f9',
                                 drawBorder: false
@@ -341,7 +349,7 @@
                             },
                             title: {
                                 display: true,
-                                text: 'Durasi (Menit)',
+                                text: 'Rata-rata Jarak Waktu (Menit)',
                                 color: '#64748b',
                                 font: {
                                     size: 12,
@@ -358,18 +366,6 @@
             // ==========================================
             const detailTableBody = document.getElementById('detailTableBody');
             const noDataMessage = document.getElementById('noDataMessage');
-
-            function formatDetails(details) {
-                return details.map(d => {
-                    // Parse "04 Feb: 90m" format
-                    const parts = d.split(': ');
-                    const dateStr = parts[0];
-                    const mins = parseInt(parts[1]);
-                    const isOver = mins > LIMIT_MINUTES;
-                    const formatted = dateStr + ': ' + formatDuration(mins);
-                    return isOver ? `<span class="over-limit">${formatted}</span>` : formatted;
-                }).join('<br>') || '-';
-            }
 
             function populateDetailTable(data) {
                 detailTableBody.innerHTML = '';
@@ -390,10 +386,19 @@
 
                     // Add column for each role dynamically
                     data.roles.forEach(role => {
-                        const roleDetails = formatDetails(data.datasets[role.key]?.details?.[
-                            index] || []);
+                        // Data details is now: ["3 User Valid"] 
+                        // Only displaying the value in the table might be cleaner: "45m"
+                        let val = data.datasets[role.key]?.data?.[index] || 0;
+                        let details = data.datasets[role.key]?.details?.[index]?.[0] || '';
+
+                        let cellContent = '-';
+                        if (val > 0) {
+                            cellContent =
+                                `<span class="font-bold text-gray-700">${formatDuration(val)}</span><br><span class="text-xs text-gray-400">${details}</span>`;
+                        }
+
                         rowHtml +=
-                            `<td class="px-3 py-2 text-gray-600 align-top">${roleDetails}</td>`;
+                            `<td class="px-3 py-2 text-gray-600 align-top">${cellContent}</td>`;
                     });
 
                     row.innerHTML = rowHtml;

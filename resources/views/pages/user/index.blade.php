@@ -110,15 +110,9 @@
                                         <div class="flex items-center">
                                             <div class="h-10 w-10 flex-shrink-0">
                                                 <div
-                                                    class="h-10 w-10 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white font-semibold">
-                                                    @php
-                                                        $nameParts = explode(' ', $item->name);
-                                                        $initials = strtoupper(substr($nameParts[0], 0, 1));
-                                                        if (count($nameParts) > 1) {
-                                                            $initials .= strtoupper(substr($nameParts[1], 0, 1));
-                                                        }
-                                                    @endphp
-                                                    {{ $initials }}
+                                                    class="h-10 w-10 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white font-semibold overflow-hidden">
+                                                    <img src="{{ $item->avatar_url }}" alt="{{ $item->name }}"
+                                                        class="h-full w-full object-cover">
                                                 </div>
                                             </div>
                                             <div class="ml-4">

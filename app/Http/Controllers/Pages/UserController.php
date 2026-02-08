@@ -7,6 +7,7 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Spatie\Permission\Models\Role;
 use Illuminate\Validation\Rule;
+use Illuminate\Support\Facades\Storage;
 
 class UserController extends Controller
 {
@@ -101,14 +102,24 @@ class UserController extends Controller
             ],
             "role" => "required",
             "password" => "nullable|confirmed|min:8",
+            "avatar" => "nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048",
         ]);
 
-        $data = $request->except(['role', 'password_confirmation']);
+        $data = $request->except(['role', 'password_confirmation', 'avatar']);
 
         if ($request->filled('password')) {
             $data['password'] = bcrypt($request->password);
         } else {
             unset($data['password']);
+        }
+
+        // Handle Avatar Upload
+        if ($request->hasFile('avatar')) {
+            if ($user->avatar && Storage::disk('public')->exists($user->avatar)) {
+                Storage::disk('public')->delete($user->avatar);
+            }
+            $path = $request->file('avatar')->store('avatars', 'public');
+            $data['avatar'] = $path;
         }
 
         $user->update($data);

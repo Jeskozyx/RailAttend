@@ -15,6 +15,38 @@ class RekapController extends Controller
     /**
      * Display rekap waktu page with expandable table
      */
+    /**
+     * Helper to format seconds into human readable string
+     */
+    private function formatDuration($seconds)
+    {
+        if ($seconds < 60) {
+            return $seconds . ' Detik';
+        } elseif ($seconds < 3600) {
+            $menit = floor($seconds / 60);
+            $detik = $seconds % 60;
+            return $detik > 0 
+                ? $menit . ' Menit ' . $detik . ' Detik'
+                : $menit . ' Menit';
+        } else {
+            $jam = floor($seconds / 3600);
+            $sisaDetik = $seconds % 3600;
+            $menit = floor($sisaDetik / 60);
+            $detik = $sisaDetik % 60;
+            $result = $jam . ' Jam';
+            if ($menit > 0) {
+                $result .= ' ' . $menit . ' Menit';
+            }
+            if ($detik > 0) {
+                $result .= ' ' . $detik . ' Detik';
+            }
+            return $result;
+        }
+    }
+
+    /**
+     * Display rekap waktu page with expandable table
+     */
     public function index(Request $request)
     {
         // Get all non-admin users for filter dropdown
@@ -61,9 +93,17 @@ class RekapController extends Controller
         // Build rekap data structure
         $rekap = [];
         
-        // Track per-user AND per-schedule: previousSubmitTime and rondeCount
-        // This handles midnight-crossing shifts correctly
-        $userScheduleTracking = [];
+        // Color palette for session grouping (Tailwind border colors)
+        $sessionColors = [
+            'border-blue-500',      'border-green-500', 
+            'border-purple-500',    'border-amber-500',
+            'border-rose-500',      'border-cyan-500',
+            'border-indigo-500',    'border-teal-500',
+            'border-fuchsia-500',   'border-orange-500',
+            'border-lime-500',      'border-pink-500',
+            'border-sky-500',       'border-emerald-500',
+            'border-violet-500',    'border-red-500'
+        ];
 
         foreach ($scanReports as $index => $report) {
             $verifications = $report->verifications->sortBy('verified_at');
@@ -83,6 +123,7 @@ class RekapController extends Controller
                 $userScheduleTracking[$trackingKey] = [
                     'ronde' => 0,
                     'previousSubmitTime' => null,
+                    'sessionIndex' => 0, // NEW: Track session restart count
                 ];
             }
 
@@ -95,14 +136,14 @@ class RekapController extends Controller
             if ($userScheduleTracking[$trackingKey]['previousSubmitTime']) {
                 $jarakWaktuSeconds = $userScheduleTracking[$trackingKey]['previousSubmitTime']->diffInSeconds($firstScan);
                 
-                // SAFETY RULE: If gap > 8 hours (28800 seconds), force reset to Putaran 1
-                // This handles edge cases like using same schedule days apart
-                $maxGapSeconds = 8 * 60 * 60; // 8 hours
+                // SAFETY RULE: If gap > 7 hours, force reset to Putaran 1
+                $maxGapSeconds = 7 * 60 * 60; // 7 hours
                 if ($jarakWaktuSeconds > $maxGapSeconds) {
                     // Reset tracking for this user+schedule
                     $userScheduleTracking[$trackingKey] = [
                         'ronde' => 0,
                         'previousSubmitTime' => null,
+                        'sessionIndex' => $userScheduleTracking[$trackingKey]['sessionIndex'] + 1, // Start new session
                     ];
                     $jarakWaktuSeconds = 0; // First scan of new session
                 }
@@ -142,19 +183,30 @@ class RekapController extends Controller
             $trainName = $schedule?->train?->name ?? $report->train?->name ?? '-';
             $scheduleInfo = $schedule ? ($schedule->no_ka . ' (' . $schedule->origin . ' → ' . $schedule->destination . ')') : '-';
 
+            // Generate Session Color
+            // Use a hash of UserID + ScheduleID + SessionIndex to pick a consistent color
+            $sessionUniqueStr = $userId . '_' . $scheduleId . '_' . $userScheduleTracking[$trackingKey]['sessionIndex'];
+            $colorIndex = crc32($sessionUniqueStr) % count($sessionColors);
+            $sessionColor = $sessionColors[$colorIndex];
+
             $rekap[] = [
                 'ronde' => $userScheduleTracking[$trackingKey]['ronde'],
                 'tanggal' => $report->submitted_at ? Carbon::parse($report->submitted_at)->format('d/m/Y') : '-',
                 'waktu_awal' => $firstScan->format('H:i:s'),
                 'waktu_akhir' => $lastScan->format('H:i:s'),
                 'durasi_detik' => $durasiSeconds,
+                'durasi_formatted' => $this->formatDuration($durasiSeconds),
                 'jarak_waktu_detik' => $jarakWaktuSeconds,
+                'jarak_waktu_formatted' => $this->formatDuration($jarakWaktuSeconds),
                 'status' => $status,
+                'session_color' => $sessionColor, // Pass color to view
                 'details' => $details,
                 // User info
                 'user_name' => $user?->name ?? '-',
+                'user_id' => $user?->id,
                 'user_nipp' => $user?->nipp ?? '-',
                 'user_jabatan' => $roleName,
+                'avatar_url' => $user?->avatar_url, // Add avatar URL
                 'train_name' => $trainName,
                 'no_ka' => $schedule?->no_ka ?? '-',
                 'schedule_info' => $scheduleInfo,
@@ -163,6 +215,119 @@ class RekapController extends Controller
             ];
         }
 
-        return view('pages.rekap.index', compact('rekap', 'users', 'schedules', 'roles', 'dateFrom', 'dateTo', 'userId', 'scheduleId', 'roleId'));
+        // Calculate Rerata Jarak Waktu
+        $userJarakWaktu = [];
+        foreach ($rekap as $item) {
+            $uid = $item['user_id'] ?? 'unknown';
+            if (!isset($userJarakWaktu[$uid])) {
+                $userJarakWaktu[$uid] = [
+                    'total_detik' => 0,
+                    'jumlah_ronde' => 0,
+                    'jumlah_sesi' => 0, // Count of 0-second gaps (starts)
+                    'user_name' => $item['user_name'],
+                    'user_jabatan' => $item['user_jabatan'] ?? '-',
+                    'schedules' => [], // Track per-schedule data
+                ];
+            }
+            
+            $jarak = $item['jarak_waktu_detik'];
+            $scheduleKey = $item['train_name'] . ' (' . ($item['no_ka'] ?? '-') . ')';
+
+            // Global User Stats
+            $userJarakWaktu[$uid]['total_detik'] += $jarak;
+            $userJarakWaktu[$uid]['jumlah_ronde']++;
+            
+            if ($jarak == 0) {
+                $userJarakWaktu[$uid]['jumlah_sesi']++;
+            }
+
+            // Per-Schedule Stats
+            if (!isset($userJarakWaktu[$uid]['schedules'][$scheduleKey])) {
+                $userJarakWaktu[$uid]['schedules'][$scheduleKey] = [
+                    'total_detik' => 0,
+                    'jumlah_ronde' => 0,
+                    'jumlah_sesi' => 0,
+                ];
+            }
+            $userJarakWaktu[$uid]['schedules'][$scheduleKey]['total_detik'] += $jarak;
+            $userJarakWaktu[$uid]['schedules'][$scheduleKey]['jumlah_ronde']++;
+            if ($jarak == 0) {
+                $userJarakWaktu[$uid]['schedules'][$scheduleKey]['jumlah_sesi']++;
+            }
+        }
+
+        // Step 2: Calculate average per user and per schedule
+        $userAverages = [];
+        foreach ($userJarakWaktu as $uid => $data) {
+            // Global Average
+            $divisor = max(1, $data['jumlah_ronde'] - $data['jumlah_sesi']);
+            $rataRata = ($data['jumlah_ronde'] > $data['jumlah_sesi']) 
+                ? round($data['total_detik'] / $divisor) 
+                : 0;
+
+            // Per-Schedule Averages
+            $scheduleAverages = [];
+            foreach ($data['schedules'] as $key => $sData) {
+                 $sDivisor = max(1, $sData['jumlah_ronde'] - $sData['jumlah_sesi']);
+                 $sRata = ($sData['jumlah_ronde'] > $sData['jumlah_sesi'])
+                    ? round($sData['total_detik'] / $sDivisor)
+                    : 0;
+                 
+                 $scheduleAverages[$key] = [
+                     'rerata_detik' => $sRata,
+                     'rerata_formatted' => $this->formatDuration($sRata),
+                     'jumlah_ronde' => $sData['jumlah_ronde'],
+                 ];
+            }
+
+            $userAverages[$uid] = [
+                'user_name' => $data['user_name'],
+                'user_jabatan' => $data['user_jabatan'],
+                'avatar_url' => $users->find($uid)->avatar_url, // Get avatar URL
+                'rerata_detik' => $rataRata,
+                'rerata_formatted' => $this->formatDuration($rataRata),
+                'jumlah_ronde' => $data['jumlah_ronde'],
+                'jumlah_sesi' => $data['jumlah_sesi'],
+                'schedules' => $scheduleAverages, // Pass to view
+            ];
+        }
+
+        // Step 3: Calculate overall average
+        $totalUserAverages = 0;
+        $validUsersCount = 0;
+        foreach ($userAverages as $avg) {
+            if ($avg['jumlah_ronde'] > $avg['jumlah_sesi']) {
+                $totalUserAverages += $avg['rerata_detik'];
+                $validUsersCount++;
+            }
+        }
+        $rerataJarakWaktu = $validUsersCount > 0 ? round($totalUserAverages / $validUsersCount) : 0;
+        $rerataJarakWaktuFormatted = $this->formatDuration($rerataJarakWaktu);
+
+        // Handle AJAX Request for Realtime Polling
+        if ($request->ajax()) {
+            $htmlTable = view('pages.rekap.partials.table_rows', compact('rekap'))->render();
+            $htmlSummary = view('pages.rekap.partials.summary_cards', compact('rekap', 'userAverages', 'rerataJarakWaktuFormatted', 'users'))->render();
+
+            return response()->json([
+                'html_table' => $htmlTable,
+                'html_summary' => $htmlSummary,
+            ]);
+        }
+
+        return view('pages.rekap.index', compact(
+            'rekap', 
+            'users', 
+            'schedules', 
+            'roles', 
+            'dateFrom', 
+            'dateTo', 
+            'userId', 
+            'scheduleId', 
+            'roleId',
+            'userAverages',
+            'rerataJarakWaktu',
+            'rerataJarakWaktuFormatted'
+        ));
     }
 }

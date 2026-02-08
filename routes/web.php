@@ -12,6 +12,7 @@ use App\Http\Controllers\Pages\TrainsController;
 use App\Http\Controllers\Pages\ScheduleController;
 use App\Http\Controllers\Pages\RangkaianController;
 use App\Http\Controllers\Pages\RekapController;
+use App\Http\Controllers\Pages\ProfileController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', [LoginController::class, 'index'])->name('login');
@@ -92,4 +93,8 @@ Route::middleware(['auth'])->group(function() {
     Route::prefix('rekap')->group(function () {
         Route::get('/', [RekapController::class, 'index'])->name('rekap.index');
     });
+
+    // Profile Routes
+    Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
+    Route::put('/profile', [ProfileController::class, 'update'])->name('profile.update');
 });

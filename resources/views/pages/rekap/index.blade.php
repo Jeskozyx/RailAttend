@@ -6,328 +6,165 @@
 
 @section('content')
     @role('Admin')
-        <div class="min-h-screen py-6 bg-gray-50/50">
+        <div class="min-h-screen py-8 bg-gray-50/50">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 
                 {{-- Header --}}
-                <div class="mb-6">
-                    <h1 class="text-3xl font-bold text-gray-900">Rekap Waktu</h1>
-                    <p class="mt-1 text-sm text-gray-500">Detail waktu keliling per Putaran dengan rincian scan gerbong</p>
+                <div class="mb-8 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                    <div>
+                        <h1 class="text-3xl font-bold text-gray-900 tracking-tight">Rekap Waktu</h1>
+                        <p class="mt-1 text-sm text-gray-500">Detail waktu keliling per Putaran dengan rincian scan gerbong</p>
+                    </div>
                 </div>
 
-                {{-- Filter Bar --}}
-                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4 mb-6">
-                    <form action="" method="GET" class="flex flex-wrap items-center gap-4">
-                        <div class="flex items-center gap-2">
-                            <label class="text-sm font-medium text-gray-700">Dari:</label>
-                            <input type="date" name="date_from" value="{{ $dateFrom ?? now()->format('Y-m-d') }}"
-                                class="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                {{-- Filter Toolbar --}}
+                <div class="mb-8 p-1">
+                    <form action="" method="GET" class="flex flex-col lg:flex-row lg:items-end gap-4 overflow-x-auto pb-2">
+                        {{-- Date Range Group --}}
+                        <div class="flex items-center gap-2 bg-white p-1.5 rounded-xl border border-gray-200 shadow-sm">
+                            <div class="relative group">
+                                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                    <svg class="h-4 w-4 text-gray-400 group-hover:text-blue-500 transition-colors"
+                                        fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                    </svg>
+                                </div>
+                                <input type="date" name="date_from" value="{{ $dateFrom ?? now()->format('Y-m-d') }}"
+                                    class="pl-9 pr-3 py-2 bg-transparent border-0 text-sm font-medium text-gray-700 focus:ring-0 focus:text-blue-600 cursor-pointer placeholder-gray-400"
+                                    title="Dari Tanggal">
+                            </div>
+                            <span class="text-gray-300">|</span>
+                            <div class="relative group">
+                                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                    <svg class="h-4 w-4 text-gray-400 group-hover:text-blue-500 transition-colors"
+                                        fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                    </svg>
+                                </div>
+                                <input type="date" name="date_to" value="{{ $dateTo ?? now()->format('Y-m-d') }}"
+                                    class="pl-9 pr-3 py-2 bg-transparent border-0 text-sm font-medium text-gray-700 focus:ring-0 focus:text-blue-600 cursor-pointer placeholder-gray-400"
+                                    title="Sampai Tanggal">
+                            </div>
                         </div>
-                        <div class="flex items-center gap-2">
-                            <label class="text-sm font-medium text-gray-700">Sampai:</label>
-                            <input type="date" name="date_to" value="{{ $dateTo ?? now()->format('Y-m-d') }}"
-                                class="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+
+                        {{-- Dropdowns Group --}}
+                        <div class="flex flex-1 gap-3 overflow-x-auto">
+                            <div class="relative min-w-[140px]">
+                                <select name="user_id"
+                                    class="w-full pl-3 pr-8 py-3.5 bg-white border border-gray-200 rounded-xl text-sm font-medium text-gray-700 focus:ring-2 focus:ring-blue-100 focus:border-blue-400 transition-all appearance-none cursor-pointer hover:border-blue-300">
+                                    <option value="">Semua User</option>
+                                    @foreach ($users ?? [] as $user)
+                                        <option value="{{ $user->id }}"
+                                            {{ ($userId ?? '') == $user->id ? 'selected' : '' }}>
+                                            {{ $user->name }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                                <div class="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
+                                    <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M19 9l-7 7-7-7"></path>
+                                    </svg>
+                                </div>
+                            </div>
+
+                            <div class="relative min-w-[160px]">
+                                <select name="schedule_id"
+                                    class="w-full pl-3 pr-8 py-3.5 bg-white border border-gray-200 rounded-xl text-sm font-medium text-gray-700 focus:ring-2 focus:ring-blue-100 focus:border-blue-400 transition-all appearance-none cursor-pointer hover:border-blue-300">
+                                    <option value="">Semua Jadwal</option>
+                                    @foreach ($schedules ?? [] as $schedule)
+                                        <option value="{{ $schedule->id }}"
+                                            {{ ($scheduleId ?? '') == $schedule->id ? 'selected' : '' }}>
+                                            {{ $schedule->train?->name ?? '-' }} ({{ $schedule->no_ka }})
+                                        </option>
+                                    @endforeach
+                                </select>
+                                <div class="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
+                                    <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M19 9l-7 7-7-7"></path>
+                                    </svg>
+                                </div>
+                            </div>
+
+                            <div class="relative min-w-[140px]">
+                                <select name="role_id"
+                                    class="w-full pl-3 pr-8 py-3.5 bg-white border border-gray-200 rounded-xl text-sm font-medium text-gray-700 focus:ring-2 focus:ring-blue-100 focus:border-blue-400 transition-all appearance-none cursor-pointer hover:border-blue-300">
+                                    <option value="">Semua Jabatan</option>
+                                    @foreach ($roles ?? [] as $role)
+                                        <option value="{{ $role->id }}"
+                                            {{ ($roleId ?? '') == $role->id ? 'selected' : '' }}>
+                                            {{ $role->name }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                                <div class="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
+                                    <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M19 9l-7 7-7-7"></path>
+                                    </svg>
+                                </div>
+                            </div>
                         </div>
-                        <div class="flex items-center gap-2">
-                            <label class="text-sm font-medium text-gray-700">User:</label>
-                            <select name="user_id"
-                                class="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                                <option value="">Semua User</option>
-                                @foreach ($users ?? [] as $user)
-                                    <option value="{{ $user->id }}" {{ ($userId ?? '') == $user->id ? 'selected' : '' }}>
-                                        {{ $user->name }} ({{ $user->nipp ?? '-' }})
-                                    </option>
-                                @endforeach
-                            </select>
-                        </div>
-                        <div class="flex items-center gap-2">
-                            <label class="text-sm font-medium text-gray-700">Jadwal:</label>
-                            <select name="schedule_id"
-                                class="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                                <option value="">Semua Jadwal</option>
-                                @foreach ($schedules ?? [] as $schedule)
-                                    <option value="{{ $schedule->id }}"
-                                        {{ ($scheduleId ?? '') == $schedule->id ? 'selected' : '' }}>
-                                        🚂 {{ $schedule->train?->name ?? '-' }} ({{ $schedule->no_ka }})
-                                    </option>
-                                @endforeach
-                            </select>
-                        </div>
-                        <div class="flex items-center gap-2">
-                            <label class="text-sm font-medium text-gray-700">Jabatan:</label>
-                            <select name="role_id"
-                                class="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                                <option value="">Semua Jabatan</option>
-                                @foreach ($roles ?? [] as $role)
-                                    <option value="{{ $role->id }}" {{ ($roleId ?? '') == $role->id ? 'selected' : '' }}>
-                                        👤 {{ $role->name }}
-                                    </option>
-                                @endforeach
-                            </select>
-                        </div>
+
+                        {{-- Action Button --}}
                         <button type="submit"
-                            class="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition">
+                            class="shrink-0 inline-flex items-center justify-center gap-2 px-6 py-3.5 bg-gray-900 text-white rounded-xl text-sm font-semibold hover:bg-gray-800 active:bg-black transition-all shadow-md hover:shadow-lg transform hover:-translate-y-0.5">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+                            </svg>
                             Filter
                         </button>
                     </form>
                 </div>
 
                 {{-- Table Card --}}
-                <div class="bg-white rounded-2xl shadow-lg overflow-hidden border border-gray-100">
+                <div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden mb-8">
                     <div class="overflow-x-auto">
                         <table class="w-full border-collapse">
                             <thead>
-                                <tr class="bg-gradient-to-r from-[#001D4B] to-[#0a3d7c]">
-                                    <th class="text-white font-semibold text-xs uppercase tracking-wider px-4 py-3.5 text-left rounded-tl-xl"
-                                        style="width: 60px;"></th>
-                                    <th class="text-white font-semibold text-xs uppercase tracking-wider px-4 py-3.5 text-left">
-                                        Putaran</th>
-                                    <th class="text-white font-semibold text-xs uppercase tracking-wider px-4 py-3.5 text-left">
-                                        Tanggal</th>
-                                    <th class="text-white font-semibold text-xs uppercase tracking-wider px-4 py-3.5 text-left">
-                                        Nama User</th>
-                                    <th class="text-white font-semibold text-xs uppercase tracking-wider px-4 py-3.5 text-left">
-                                        NIPP</th>
-                                    <th class="text-white font-semibold text-xs uppercase tracking-wider px-4 py-3.5 text-left">
-                                        Jabatan</th>
-                                    <th class="text-white font-semibold text-xs uppercase tracking-wider px-4 py-3.5 text-left">
-                                        Waktu Awal</th>
-                                    <th class="text-white font-semibold text-xs uppercase tracking-wider px-4 py-3.5 text-left">
-                                        Waktu Akhir</th>
-                                    <th class="text-white font-semibold text-xs uppercase tracking-wider px-4 py-3.5 text-left">
-                                        Durasi</th>
-                                    <th class="text-white font-semibold text-xs uppercase tracking-wider px-4 py-3.5 text-left">
-                                        Jarak Waktu</th>
-                                    <th class="text-white font-semibold text-xs uppercase tracking-wider px-4 py-3.5 text-left">
-                                        Jumlah SF</th>
+                                <tr class="bg-gray-50/80 border-b border-gray-200">
+                                    <th class="px-4 py-4 text-left w-12"></th>
                                     <th
-                                        class="text-white font-semibold text-xs uppercase tracking-wider px-4 py-3.5 text-left rounded-tr-xl">
+                                        class="px-4 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                                        Putaran</th>
+                                    <th
+                                        class="px-4 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                                        User</th>
+                                    <th
+                                        class="px-4 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                                        Jabatan</th>
+                                    <th
+                                        class="px-4 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                                        Waktu</th>
+                                    <th
+                                        class="px-4 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                                        Durasi</th>
+                                    <th
+                                        class="px-4 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                                        Jarak Waktu</th>
+                                    <th
+                                        class="px-4 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                                        KA & SF</th>
+                                    <th
+                                        class="px-4 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
                                         Status</th>
                                 </tr>
                             </thead>
-                            <tbody>
-                                @forelse ($rekap ?? [] as $index => $item)
-                                    {{-- Parent Row --}}
-                                    <tr class="parent-row bg-white hover:bg-gray-50 transition-colors cursor-pointer border-b border-gray-200"
-                                        data-target="detail-{{ $index }}">
-                                        <td class="px-4 py-3.5 align-middle">
-                                            <button type="button"
-                                                class="toggle-btn w-7 h-7 rounded-lg border-2 border-blue-500 bg-white text-blue-500 font-bold text-base inline-flex items-center justify-center hover:bg-blue-500 hover:text-white transition-all"
-                                                onclick="toggleDetail({{ $index }}, event)">
-                                                +
-                                            </button>
-                                        </td>
-                                        <td class="px-4 py-3.5 align-middle">
-                                            <span
-                                                class="bg-gradient-to-br from-blue-500 to-blue-700 text-white w-8 h-8 rounded-lg inline-flex items-center justify-center font-bold text-sm">
-                                                {{ $item['ronde'] ?? $loop->iteration }}
-                                            </span>
-                                        </td>
-                                        <td class="px-4 py-3.5 align-middle">
-                                            <span class="text-gray-700 text-sm">{{ $item['tanggal'] ?? '-' }}</span>
-                                        </td>
-                                        <td class="px-4 py-3.5 align-middle">
-                                            <div class="flex items-center gap-2">
-                                                <div
-                                                    class="w-8 h-8 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white font-semibold text-xs">
-                                                    {{ strtoupper(substr($item['user_name'] ?? 'U', 0, 1)) }}
-                                                </div>
-                                                <span class="font-medium text-gray-800">{{ $item['user_name'] ?? '-' }}</span>
-                                            </div>
-                                        </td>
-                                        <td class="px-4 py-3.5 align-middle">
-                                            <span
-                                                class="text-gray-700 font-mono text-sm">{{ $item['user_nipp'] ?? '-' }}</span>
-                                        </td>
-                                        <td class="px-4 py-3.5 align-middle">
-                                            <span class="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-medium">
-                                                {{ $item['user_jabatan'] ?? '-' }}
-                                            </span>
-                                        </td>
-                                        <td class="px-4 py-3.5 align-middle">
-                                            <span
-                                                class="font-mono text-sm text-gray-900">{{ $item['waktu_awal'] ?? '-' }}</span>
-                                        </td>
-                                        <td class="px-4 py-3.5 align-middle">
-                                            <span
-                                                class="font-mono text-sm text-gray-900">{{ $item['waktu_akhir'] ?? '-' }}</span>
-                                        </td>
-                                        <td class="px-4 py-3.5 align-middle">
-                                            @php
-                                                $durasiDetik = $item['durasi_detik'] ?? 0;
-                                                $isOverLimit = $durasiDetik > 1800;
-                                                if ($durasiDetik < 60) {
-                                                    $durasiFormatted = $durasiDetik . ' Detik';
-                                                } elseif ($durasiDetik < 3600) {
-                                                    $menit = floor($durasiDetik / 60);
-                                                    $detik = $durasiDetik % 60;
-                                                    $durasiFormatted =
-                                                        $detik > 0
-                                                            ? $menit . ' Menit ' . $detik . ' Detik'
-                                                            : $menit . ' Menit';
-                                                } else {
-                                                    $jam = floor($durasiDetik / 3600);
-                                                    $sisaDetik = $durasiDetik % 3600;
-                                                    $menit = floor($sisaDetik / 60);
-                                                    $detik = $sisaDetik % 60;
-                                                    $durasiFormatted = $jam . ' Jam';
-                                                    if ($menit > 0) {
-                                                        $durasiFormatted .= ' ' . $menit . ' Menit';
-                                                    }
-                                                    if ($detik > 0) {
-                                                        $durasiFormatted .= ' ' . $detik . ' Detik';
-                                                    }
-                                                }
-                                            @endphp
-                                            <span class="font-semibold {{ $isOverLimit ? 'text-red-600' : 'text-gray-900' }}">
-                                                {{ $durasiFormatted }}
-                                            </span>
-                                        </td>
-                                        <td class="px-4 py-3.5 align-middle">
-                                            @php
-                                                $jarakDetik = $item['jarak_waktu_detik'] ?? 0;
-                                                if ($jarakDetik < 60) {
-                                                    $jarakFormatted = $jarakDetik . ' Detik';
-                                                } elseif ($jarakDetik < 3600) {
-                                                    $menit = floor($jarakDetik / 60);
-                                                    $detik = $jarakDetik % 60;
-                                                    $jarakFormatted =
-                                                        $detik > 0
-                                                            ? $menit . ' Menit ' . $detik . ' Detik'
-                                                            : $menit . ' Menit';
-                                                } else {
-                                                    $jam = floor($jarakDetik / 3600);
-                                                    $sisaDetik = $jarakDetik % 3600;
-                                                    $menit = floor($sisaDetik / 60);
-                                                    $detik = $sisaDetik % 60;
-                                                    $jarakFormatted = $jam . ' Jam';
-                                                    if ($menit > 0) {
-                                                        $jarakFormatted .= ' ' . $menit . ' Menit';
-                                                    }
-                                                    if ($detik > 0) {
-                                                        $jarakFormatted .= ' ' . $detik . ' Detik';
-                                                    }
-                                                }
-                                            @endphp
-                                            <span class="text-gray-600">{{ $jarakFormatted }}</span>
-                                        </td>
-                                        <td class="px-4 py-3.5 align-middle">
-                                            <span
-                                                class="inline-flex items-center gap-1.5 bg-indigo-100 text-indigo-800 px-2.5 py-1 rounded-lg font-semibold text-xs">
-                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                        d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                                                </svg>
-                                                {{ count($item['details'] ?? []) }} Gerbong
-                                            </span>
-                                        </td>
-                                        <td class="px-4 py-3.5 align-middle">
-                                            @php $status = $item['status'] ?? 'normal'; @endphp
-                                            @if ($status === 'normal')
-                                                <span
-                                                    class="bg-green-100 text-green-800 px-2.5 py-1 rounded-full text-xs font-semibold">Normal</span>
-                                            @elseif($status === 'warning')
-                                                <span
-                                                    class="bg-amber-100 text-amber-800 px-2.5 py-1 rounded-full text-xs font-semibold">Peringatan</span>
-                                            @else
-                                                <span
-                                                    class="bg-red-100 text-red-800 px-2.5 py-1 rounded-full text-xs font-semibold">Melebihi
-                                                    Batas</span>
-                                            @endif
-                                        </td>
-                                    </tr>
-
-                                    {{-- Child Row (Details) --}}
-                                    <tr class="child-row hidden bg-gray-50" id="detail-{{ $index }}">
-                                        <td colspan="12" class="px-4 pb-4 border-b border-gray-200">
-                                            <div class="bg-white rounded-xl p-4 shadow-sm ml-11">
-                                                <div class="flex items-center justify-between mb-4">
-                                                    <p
-                                                        class="text-xs font-semibold text-gray-500 uppercase tracking-wide flex items-center gap-1">
-                                                        <svg class="w-4 h-4" fill="none" stroke="currentColor"
-                                                            viewBox="0 0 24 24">
-                                                            <path stroke-linecap="round" stroke-linejoin="round"
-                                                                stroke-width="2"
-                                                                d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                                                        </svg>
-                                                        Rincian Scan Gerbong - Putaran {{ $item['ronde'] ?? $loop->iteration }}
-                                                    </p>
-                                                    <div class="flex items-center gap-4">
-                                                        <div class="flex items-center gap-2">
-                                                            <span class="text-xs text-gray-500">Kereta:</span>
-                                                            <span
-                                                                class="px-3 py-1 bg-gradient-to-r from-indigo-500 to-purple-600 text-white rounded-full text-xs font-semibold shadow-sm">
-                                                                {{ $item['train_name'] ?? '-' }} - {{ $item['no_ka'] ?? '-' }}
-                                                            </span>
-                                                        </div>
-                                                        <div class="flex items-center gap-2">
-                                                            <span class="text-xs text-gray-500">Waktu Submit:</span>
-                                                            <span
-                                                                class="px-3 py-1 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-full text-xs font-semibold shadow-sm">
-                                                                {{ $item['submitted_at'] ?? '-' }}
-                                                            </span>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                                <table class="w-full">
-                                                    <thead>
-                                                        <tr class="bg-gray-100">
-                                                            <th class="text-gray-600 font-semibold text-xs uppercase px-3 py-2.5 text-left rounded-l-lg"
-                                                                style="width: 50px;">No</th>
-                                                            <th
-                                                                class="text-gray-600 font-semibold text-xs uppercase px-3 py-2.5 text-left">
-                                                                Nama Gerbong</th>
-                                                            <th
-                                                                class="text-gray-600 font-semibold text-xs uppercase px-3 py-2.5 text-left rounded-r-lg">
-                                                                Waktu Scan</th>
-                                                        </tr>
-                                                    </thead>
-                                                    <tbody class="divide-y divide-gray-100">
-                                                        @forelse ($item['details'] ?? [] as $detailIndex => $detail)
-                                                            <tr class="hover:bg-gray-50">
-                                                                <td class="px-3 py-2.5 text-sm text-gray-700">
-                                                                    {{ $detailIndex + 1 }}</td>
-                                                                <td class="px-3 py-2.5 text-sm font-medium text-gray-800">
-                                                                    {{ $detail['nama_gerbong'] ?? '-' }}</td>
-                                                                <td class="px-3 py-2.5 text-sm font-mono text-gray-900">
-                                                                    {{ $detail['waktu_scan'] ?? '-' }}</td>
-                                                            </tr>
-                                                        @empty
-                                                            <tr>
-                                                                <td colspan="3"
-                                                                    class="text-center text-gray-400 py-4 text-sm">Tidak ada
-                                                                    data scan</td>
-                                                            </tr>
-                                                        @endforelse
-                                                    </tbody>
-                                                </table>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                @empty
-                                    <tr>
-                                        <td colspan="12" class="text-center py-16">
-                                            <div class="flex flex-col items-center">
-                                                <div
-                                                    class="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mb-4">
-                                                    <svg class="w-10 h-10 text-gray-400" fill="none" stroke="currentColor"
-                                                        viewBox="0 0 24 24">
-                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                            d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                                    </svg>
-                                                </div>
-                                                <p class="text-gray-500 font-medium">Tidak ada data rekap waktu</p>
-                                                <p class="text-gray-400 text-sm mt-1">Pilih tanggal atau user untuk melihat
-                                                    data</p>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                @endforelse
+                            <tbody id="rekap-table-body" class="divide-y divide-gray-100">
+                                @include('pages.rekap.partials.table_rows')
                             </tbody>
                         </table>
                     </div>
                 </div>
 
+                {{-- Summary Section --}}
+                <div id="rekap-summary">
+                    @include('pages.rekap.partials.summary_cards')
+                </div>
             </div>
         </div>
     @else
@@ -340,33 +177,86 @@
 @push('js')
     <script>
         function toggleDetail(index, event) {
-            event.stopPropagation();
+            // Stop propagation to prevent double-firing if row click logic exists
+            if (event) event.stopPropagation();
+
             const childRow = document.getElementById(`detail-${index}`);
             const parentRow = document.querySelector(`[data-target="detail-${index}"]`);
+            if (!childRow || !parentRow) return;
+
+            const toggleIcon = parentRow.querySelector('.toggle-btn svg');
             const toggleBtn = parentRow.querySelector('.toggle-btn');
 
-            if (childRow.classList.contains('hidden')) {
+            if (!toggleIcon || !toggleBtn) return;
+
+            // Toggle Logic
+            const isHidden = childRow.classList.contains('hidden');
+
+            if (isHidden) {
+                // Show
                 childRow.classList.remove('hidden');
-                parentRow.classList.add('bg-gray-100');
-                toggleBtn.classList.add('bg-blue-500', 'text-white', 'rotate-45');
-                toggleBtn.classList.remove('bg-white', 'text-blue-500');
+
+                // Active State Styling
+                parentRow.classList.add('bg-blue-50/50');
+                toggleBtn.classList.remove('bg-gray-100', 'text-gray-400');
+                toggleBtn.classList.add('bg-blue-100', 'text-blue-600');
+                toggleIcon.classList.add('rotate-180');
             } else {
+                // Hide
                 childRow.classList.add('hidden');
-                parentRow.classList.remove('bg-gray-100');
-                toggleBtn.classList.remove('bg-blue-500', 'text-white', 'rotate-45');
-                toggleBtn.classList.add('bg-white', 'text-blue-500');
+
+                // Inactive State Styling
+                parentRow.classList.remove('bg-blue-50/50');
+                toggleBtn.classList.add('bg-gray-100', 'text-gray-400');
+                toggleBtn.classList.remove('bg-blue-100', 'text-blue-600');
+                toggleIcon.classList.remove('rotate-180');
             }
         }
 
-        document.addEventListener('DOMContentLoaded', function() {
-            document.querySelectorAll('.parent-row').forEach(row => {
-                row.addEventListener('click', function(e) {
-                    if (e.target.closest('.toggle-btn')) return;
-                    const target = this.getAttribute('data-target');
+        // Event Delegation for Table Rows
+        document.addEventListener('click', function(e) {
+            // Check if clicked element is inside a parent-row
+            const parentRow = e.target.closest('.parent-row');
+            if (parentRow) {
+                const target = parentRow.getAttribute('data-target');
+                if (target) {
                     const index = target.replace('detail-', '');
-                    toggleDetail(parseInt(index), e);
-                });
-            });
+                    toggleDetail(index, e);
+                }
+            }
         });
+
+        // Realtime Polling
+        const POLL_INTERVAL = 5000; // 5 seconds
+
+        function fetchData() {
+            // Keep current query params for filtering
+            const url = window.location.href;
+
+            fetch(url, {
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'Accept': 'application/json'
+                    }
+                })
+                .then(response => {
+                    if (!response.ok) throw new Error('Network response was not ok');
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.html_table) {
+                        const tableBody = document.getElementById('rekap-table-body');
+                        if (tableBody) tableBody.innerHTML = data.html_table;
+                    }
+                    if (data.html_summary) {
+                        const summaryContainer = document.getElementById('rekap-summary');
+                        if (summaryContainer) summaryContainer.innerHTML = data.html_summary;
+                    }
+                })
+                .catch(error => console.error('Error polling data:', error));
+        }
+
+        // Start polling if not disabled
+        setInterval(fetchData, POLL_INTERVAL);
     </script>
 @endpush
