@@ -15,7 +15,7 @@
                 <div class="flex items-center justify-between">
                     <div>
                         <h1 class="text-3xl font-bold text-gray-900">Data Kereta</h1>
-                        <p class="mt-1 text-sm text-gray-500">Kelola data kereta dan rangkaian gerbong</p>
+                        <p class="mt-1 text-sm text-gray-500">Kelola data kereta dan rangkaian kereta</p>
                     </div>
                     <a href="{{ route('train.create') }}"
                         class="px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl hover:from-blue-700 hover:to-blue-800 transition-all duration-200 shadow-lg hover:shadow-xl flex items-center space-x-2">
@@ -80,7 +80,7 @@
                                     <h3 class="text-lg font-bold text-gray-900">{{ $train->name }}</h3>
                                     <p class="text-sm text-gray-500">
                                         <span class="font-semibold text-[#FF7300]">{{ $train->rangkaians_count }}</span>
-                                        Rangkaian Gerbong
+                                        Rangkaian Kereta
                                     </p>
                                 </div>
                                 <svg class="w-5 h-5 text-gray-400 transform transition-transform duration-200"

@@ -25,7 +25,7 @@
                     </a>
                     <div>
                         <h1 class="text-2xl sm:text-3xl font-bold text-gray-900">Edit Kereta</h1>
-                        <p class="mt-1 text-xs sm:text-sm text-gray-500">Kelola data dan rangkaian gerbong</p>
+                        <p class="mt-1 text-xs sm:text-sm text-gray-500">Kelola data dan rangkaian Kereta</p>
                     </div>
                 </div>
             </div>
@@ -99,10 +99,10 @@
                                 class="w-8 h-8 bg-[#FF7300] rounded-lg flex items-center justify-center text-white font-bold text-sm shadow-md shadow-orange-500/20">
                                 2</div>
                             <div>
-                                <h3 class="font-bold text-[#001D4B]">Rangkaian Gerbong</h3>
+                                <h3 class="font-bold text-[#001D4B]">Rangkaian Kereta</h3>
                                 <p class="text-xs text-slate-500">Total: <span
                                         class="font-semibold text-[#FF7300]">{{ $train->rangkaians->count() }}</span>
-                                    gerbong</p>
+                                    Kereta</p>
                             </div>
                         </div>
                         <div class="flex items-center space-x-2">
@@ -117,7 +117,7 @@
                                 </a>
                             @endif
                             <form action="{{ route('rangkaian.destroy_all', $train->id) }}" method="POST"
-                                onsubmit="return confirm('Apakah Anda yakin ingin menghapus SEMUA gerbong dalam rangkaian ini? Tindakan ini tidak dapat dibatalkan.')">
+                                onsubmit="return confirm('Apakah Anda yakin ingin menghapus SEMUA Kereta dalam rangkaian ini? Tindakan ini tidak dapat dibatalkan.')">
                                 @csrf
                                 @method('DELETE')
                                 <button type="submit"
@@ -135,7 +135,7 @@
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                         d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                                 </svg>
-                                <span>TAMBAH GERBONG</span>
+                                <span>TAMBAH RANGKAIAN</span>
                             </button>
                         </div>
                     </div>
@@ -221,8 +221,8 @@
                                             d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
                                     </svg>
                                 </div>
-                                <p class="text-sm text-gray-500 font-medium">Belum ada rangkaian gerbong</p>
-                                <p class="text-xs text-gray-400 mt-1">Klik tombol "Tambah Gerbong" untuk menambahkan</p>
+                                <p class="text-sm text-gray-500 font-medium">Belum ada rangkaian Kereta</p>
+                                <p class="text-xs text-gray-400 mt-1">Klik tombol "Tambah Kereta" untuk menambahkan</p>
                             </div>
                         @endif
                     </div>
@@ -246,7 +246,7 @@
                     const form = this.closest('form');
 
                     Swal.fire({
-                        title: 'Hapus gerbong ini?',
+                        title: 'Hapus Kereta ini?',
                         text: 'Gerbong akan dihapus dari rangkaian!',
                         icon: 'warning',
                         showCancelButton: true,

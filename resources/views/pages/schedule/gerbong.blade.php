@@ -211,7 +211,7 @@
                             </svg>
                         </div>
                         <p class="text-slate-500 font-bold mb-2">Belum ada gerbong untuk kereta ini.</p>
-                        <p class="text-sm text-slate-400">Silakan tambahkan rangkaian gerbong melalui menu Jadwal.</p>
+                        <p class="text-sm text-slate-400">Silakan tambahkan rangkaian Kereta melalui menu Jadwal.</p>
                     </div>
                 @endforelse
             </div>

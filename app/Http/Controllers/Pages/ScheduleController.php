@@ -56,7 +56,7 @@ class ScheduleController extends Controller
     {
         $request->validate([
             'train_id' => 'required|exists:trains,id',
-            'no_ka' => 'required|integer',
+            'no_ka' => 'required|string',
             'origin' => 'required|string',
             'destination' => 'required|string',
             'date' => 'required|date',
@@ -81,7 +81,7 @@ class ScheduleController extends Controller
     {
         $request->validate([
             'train_id' => 'required|exists:trains,id',
-            'no_ka' => 'required|integer',
+            'no_ka' => 'required|string',
             'origin' => 'required|string',
             'destination' => 'required|string',
             'date' => 'required|date',

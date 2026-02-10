@@ -294,14 +294,14 @@
                             annotations: {
                                 limitLine: {
                                     type: 'line',
-                                    yMin: 60, // Maybe 60 mins as a "slow" threshold?
-                                    yMax: 60,
+                                    yMin: 30, // Maybe 60 mins as a "slow" threshold?
+                                    yMax: 30,
                                     borderColor: '#dc2626',
                                     borderWidth: 2,
                                     borderDash: [6, 4],
                                     label: {
                                         display: true,
-                                        content: 'Ref 1 Jam',
+                                        content: '30 Menit',
                                         position: 'end',
                                         backgroundColor: '#dc2626',
                                         color: '#fff',

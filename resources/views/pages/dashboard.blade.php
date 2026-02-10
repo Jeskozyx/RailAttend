@@ -26,7 +26,7 @@
 
         <div class="mb-12 text-center">
             <h2 class="text-4xl font-black text-[#001D4B] mb-3">Daftar Kereta</h2>
-            <p class="text-slate-600 text-lg">Pilih kereta untuk verifikasi keliling 30 menit</p>
+            <p class="text-slate-600 text-lg">Pilih kereta untuk verifikasi</p>
             <div class="w-24 h-1 bg-gradient-to-r from-transparent via-[#FF7300] to-transparent mx-auto mt-4"></div>
         </div>
 

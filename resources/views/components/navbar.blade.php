@@ -116,7 +116,7 @@
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                         d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
                                 </svg>
-                                <span>Rekap Kereta</span>
+                                <span>Rekap Kereta dan Waktu</span>
                             </a>
 
                             <a href="#"
@@ -359,13 +359,13 @@
                     </button>
 
                     <div x-show="rekapMobile" x-collapse class="ml-8 mt-1 space-y-1">
-                        <a href="#"
+                        <a href="{{ route('rekap.index') }}"
                             class="flex items-center space-x-3 px-4 py-2 rounded-lg hover:bg-white/10 transition-colors text-sm">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                     d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
                             </svg>
-                            <span>Rekap Kereta</span>
+                            <span>Rekap Kereta dan Waktu</span>
                         </a>
                         <a href="#"
                             class="flex items-center space-x-3 px-4 py-2 rounded-lg hover:bg-white/10 transition-colors text-sm">

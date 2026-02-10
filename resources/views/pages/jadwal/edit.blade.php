@@ -80,7 +80,7 @@
                         <div class="space-y-2">
                             <label class="text-[11px] font-extrabold text-slate-400 uppercase tracking-wider">Nomor
                                 KA</label>
-                            <input type="number" name="no_ka" value="{{ old('no_ka') ?? $schedule->no_ka }}"
+                            <input type="text" name="no_ka" value="{{ old('no_ka') ?? $schedule->no_ka }}"
                                 class="w-full bg-slate-50 border border-slate-200 rounded-2xl py-3.5 px-5 focus:ring-2 focus:ring-[#FF7300] focus:border-[#FF7300] transition-all font-bold text-[#001D4B] text-sm">
                         </div>
                     </div>

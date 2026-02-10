@@ -14,7 +14,27 @@ class ProfileController extends Controller
     public function edit()
     {
         $user = auth()->user();
-        return view('pages.user.profile', compact('user'));
+
+        // Calculate Weekly Rounds (Current Week)
+        $weeklyRounds = \App\Models\ScanReport::where('user_id', $user->id)
+            ->where('status', 'completed')
+            ->whereBetween('created_at', [now()->startOfWeek(), now()->endOfWeek()])
+            ->count();
+
+        // Calculate Average Rounds (Last 4 Weeks)
+        // Group by week and count, then average
+        $averageStats = \App\Models\ScanReport::where('user_id', $user->id)
+            ->where('status', 'completed')
+            ->where('created_at', '>=', now()->subWeeks(4))
+            ->selectRaw('YEARWEEK(created_at) as week, count(*) as total')
+            ->groupBy('week')
+            ->get();
+
+        $averageRounds = $averageStats->count() > 0 
+            ? round($averageStats->avg('total')) 
+            : 0;
+
+        return view('pages.user.profile', compact('user', 'weeklyRounds', 'averageRounds'));
     }
 
     public function update(Request $request)

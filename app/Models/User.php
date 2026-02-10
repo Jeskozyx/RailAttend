@@ -38,6 +38,16 @@ class User extends Authenticatable
     }
 
     /**
+     * Get the user's jabatan (role).
+     */
+    public function getJabatanAttribute()
+    {
+        // Return the first role name or default to '-'
+        // Using Spatie's getRoleNames() collection
+        return $this->getRoleNames()->first() ?? '-';
+    }
+
+    /**
      * The attributes that should be hidden for serialization.
      *
      * @var list<string>

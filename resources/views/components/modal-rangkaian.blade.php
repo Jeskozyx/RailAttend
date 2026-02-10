@@ -8,15 +8,15 @@
         <div class="bg-gradient-to-r from-[#001D4B] to-[#003D7A] px-6 py-5">
             <div class="flex items-center justify-between">
                 <div class="flex items-center space-x-3">
-                    <div class="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
+                    {{-- <div class="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
                         <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                 d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                         </svg>
-                    </div>
+                    </div> --}}
                     <div>
                         <h3 class="font-bold text-white text-lg">Tambah Rangkaian</h3>
-                        <p class="text-blue-200 text-xs">Generate gerbong otomatis</p>
+                        <p class="text-blue-200 text-xs">Generate Kereta otomatis</p>
                     </div>
                 </div>
                 <button type="button" onclick="document.getElementById('modalRangkaian').close()"
@@ -57,7 +57,7 @@
                     <div class="space-y-2">
                         <label class="text-[11px] font-bold text-slate-500 uppercase tracking-wider flex items-center">
                             <span class="w-1.5 h-1.5 bg-[#FF7300] rounded-full mr-2"></span>
-                            Tipe Gerbong
+                            Tipe
                         </label>
                         <select name="type"
                             class="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 px-4 text-sm font-bold text-[#001D4B] focus:ring-2 focus:ring-[#FF7300] focus:border-transparent transition-all">
@@ -75,7 +75,7 @@
                     <div class="space-y-2">
                         <label class="text-[11px] font-bold text-slate-500 uppercase tracking-wider flex items-center">
                             <span class="w-1.5 h-1.5 bg-green-500 rounded-full mr-2"></span>
-                            Jumlah Gerbong
+                            Jumlah Kereta
                         </label>
                         <div class="relative">
                             <input type="number" name="jumlah" value="1" min="1" max="20"
