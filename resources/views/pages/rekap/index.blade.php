@@ -233,6 +233,12 @@
             // Keep current query params for filtering
             const url = window.location.href;
 
+            // Save currently expanded rows
+            const expandedRows = [];
+            document.querySelectorAll('.child-row:not(.hidden)').forEach(row => {
+                expandedRows.push(row.id.replace('detail-', ''));
+            });
+
             fetch(url, {
                     headers: {
                         'X-Requested-With': 'XMLHttpRequest',
@@ -246,7 +252,33 @@
                 .then(data => {
                     if (data.html_table) {
                         const tableBody = document.getElementById('rekap-table-body');
-                        if (tableBody) tableBody.innerHTML = data.html_table;
+                        if (tableBody) {
+                            tableBody.innerHTML = data.html_table;
+
+                            // Restore expanded state
+                            expandedRows.forEach(id => {
+                                const childRow = document.getElementById(`detail-${id}`);
+                                const parentRow = document.querySelector(`[data-target="detail-${id}"]`);
+
+                                if (childRow && parentRow) {
+                                    const toggleIcon = parentRow.querySelector('.toggle-btn svg');
+                                    const toggleBtn = parentRow.querySelector('.toggle-btn');
+
+                                    // Show Child
+                                    childRow.classList.remove('hidden');
+
+                                    // Active State Styling for Parent
+                                    parentRow.classList.add('bg-blue-50/50');
+                                    if (toggleBtn) {
+                                        toggleBtn.classList.remove('bg-gray-100', 'text-gray-400');
+                                        toggleBtn.classList.add('bg-blue-100', 'text-blue-600');
+                                    }
+                                    if (toggleIcon) {
+                                        toggleIcon.classList.add('rotate-180');
+                                    }
+                                }
+                            });
+                        }
                     }
                     if (data.html_summary) {
                         const summaryContainer = document.getElementById('rekap-summary');

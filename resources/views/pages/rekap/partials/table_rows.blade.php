@@ -1,7 +1,10 @@
 @forelse ($rekap ?? [] as $index => $item)
     {{-- Parent Row --}}
+    @php
+        $rowId = ($item['user_id'] ?? 'u') . '-' . ($item['schedule_id'] ?? 's') . '-' . ($item['ronde'] ?? 'r');
+    @endphp
     <tr class="parent-row hover:bg-gray-50/80 transition-colors cursor-pointer group border-l-4 {{ $item['session_color'] ?? 'border-transparent' }}"
-        data-target="detail-{{ $index }}">
+        data-target="detail-{{ $rowId }}">
         <td class="px-4 py-4 align-top">
             <button type="button"
                 class="toggle-btn w-6 h-6 rounded-full bg-gray-100 text-gray-400 flex items-center justify-center transition-all group-hover:bg-blue-50 group-hover:text-blue-500">
@@ -90,7 +93,7 @@
 
     {{-- Child Row (Details) --}}
     <tr class="child-row hidden bg-gray-50/50 border-l-4 {{ $item['session_color'] ?? 'border-transparent' }}"
-        id="detail-{{ $index }}">
+        id="detail-{{ $rowId }}">
         <td colspan="9" class="px-4 py-0 border-b border-gray-100">
             <div class="py-4 pl-12 pr-4">
                 <div class="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm">

@@ -209,6 +209,7 @@ class RekapController extends Controller
                 'avatar_url' => $user?->avatar_url, // Add avatar URL
                 'train_name' => $trainName,
                 'no_ka' => $schedule?->no_ka ?? '-',
+                'schedule_id' => $scheduleId, // Add schedule_id for unique row ID
                 'schedule_info' => $scheduleInfo,
                 // Submit time
                 'submitted_at' => $report->submitted_at ? Carbon::parse($report->submitted_at)->format('H:i:s') : '-',
