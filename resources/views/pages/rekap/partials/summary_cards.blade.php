@@ -37,8 +37,9 @@
                                 <div class="mt-3 pt-3 border-t border-gray-100 space-y-2">
                                     @foreach ($avg['schedules'] as $scheduleName => $sData)
                                         <div class="flex justify-between items-start text-xs py-1">
-                                            <span class="text-gray-600 truncate max-w-[140px] mt-0.5"
-                                                title="{{ $scheduleName }}">{{ $scheduleName }}</span>
+                                            <span
+                                                class="text-gray-600 truncate max-w-[140px] mt-0.5 cursor-help border-b border-gray-300 border-dotted"
+                                                title="{!! $sData['tooltip_text'] ?? $scheduleName !!}">{{ $scheduleName }}</span>
                                             <div class="text-right leading-tight">
                                                 <div class="font-bold text-gray-900">{{ $sData['rerata_formatted'] }}
                                                 </div>

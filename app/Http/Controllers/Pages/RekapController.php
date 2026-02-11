@@ -54,8 +54,13 @@ class RekapController extends Controller
             $query->where('name', 'Admin');
         })->orderBy('name')->get();
 
-        // Get all schedules for filter dropdown (with train relation)
-        $schedules = Schedule::with('train')->orderBy('date', 'desc')->orderBy('departure_time')->get();
+        // Get all schedules for filter dropdown, sorted by Train Name then Number
+        $schedules = Schedule::with('train')
+            ->join('trains', 'schedules.train_id', '=', 'trains.id')
+            ->select('schedules.*') // Avoid column collision
+            ->orderBy('trains.name')
+            ->orderBy('schedules.no_ka')
+            ->get();
 
         // Get all non-admin roles for filter dropdown
         $roles = Role::where('name', '!=', 'Admin')->orderBy('name')->get();
@@ -74,11 +79,11 @@ class RekapController extends Controller
             ->whereDate('submitted_at', '<=', $dateTo);
 
         if ($userId) {
-            $query->where('user_id', $userId);
+            $query->where('scan_reports.user_id', $userId);
         }
 
         if ($scheduleId) {
-            $query->where('schedule_id', $scheduleId);
+            $query->where('scan_reports.schedule_id', $scheduleId);
         }
 
         // Filter by role (jabatan)
@@ -86,9 +91,20 @@ class RekapController extends Controller
             $query->whereHas('user.roles', function ($q) use ($roleId) {
                 $q->where('roles.id', $roleId);
             });
+            // If filtering by Role, Group by User Name, then Schedule Date/Time, then Scan Time
+            $query->join('users', 'scan_reports.user_id', '=', 'users.id')
+                  ->join('schedules', 'scan_reports.schedule_id', '=', 'schedules.id') // Join Schedule
+                  ->select('scan_reports.*') // Keep only report data
+                  ->orderBy('users.name', 'ASC') // 1. Group by User
+                  ->orderBy('schedules.date', 'DESC') // 2. Newest Schedule First
+                  ->orderBy('schedules.departure_time', 'ASC') // 3. Order by Schedule Time (if multiple same day)
+                  ->orderBy('scan_reports.submitted_at', 'ASC'); // 4. Chronological Scans
+        } else {
+            // Default: Sort by Time
+            $query->orderBy('submitted_at', 'ASC');
         }
 
-        $scanReports = $query->orderBy('submitted_at')->get();
+        $scanReports = $query->get();
 
         // Build rekap data structure
         $rekap = [];
@@ -233,6 +249,7 @@ class RekapController extends Controller
             
             $jarak = $item['jarak_waktu_detik'];
             $scheduleKey = $item['train_name'] . ' (' . ($item['no_ka'] ?? '-') . ')';
+            $date = $item['tanggal'];
 
             // Global User Stats
             $userJarakWaktu[$uid]['total_detik'] += $jarak;
@@ -242,18 +259,33 @@ class RekapController extends Controller
                 $userJarakWaktu[$uid]['jumlah_sesi']++;
             }
 
-            // Per-Schedule Stats
+            // Per-Schedule Stats (Aggregated)
             if (!isset($userJarakWaktu[$uid]['schedules'][$scheduleKey])) {
                 $userJarakWaktu[$uid]['schedules'][$scheduleKey] = [
                     'total_detik' => 0,
                     'jumlah_ronde' => 0,
                     'jumlah_sesi' => 0,
+                    'dates' => [], // Track per-date details for tooltip
                 ];
             }
             $userJarakWaktu[$uid]['schedules'][$scheduleKey]['total_detik'] += $jarak;
             $userJarakWaktu[$uid]['schedules'][$scheduleKey]['jumlah_ronde']++;
             if ($jarak == 0) {
                 $userJarakWaktu[$uid]['schedules'][$scheduleKey]['jumlah_sesi']++;
+            }
+
+            // Per-Date Breakdown for Tooltip
+            if (!isset($userJarakWaktu[$uid]['schedules'][$scheduleKey]['dates'][$date])) {
+                $userJarakWaktu[$uid]['schedules'][$scheduleKey]['dates'][$date] = [
+                    'total_detik' => 0,
+                    'jumlah_ronde' => 0,
+                    'jumlah_sesi' => 0,
+                ];
+            }
+            $userJarakWaktu[$uid]['schedules'][$scheduleKey]['dates'][$date]['total_detik'] += $jarak;
+            $userJarakWaktu[$uid]['schedules'][$scheduleKey]['dates'][$date]['jumlah_ronde']++;
+            if ($jarak == 0) {
+                $userJarakWaktu[$uid]['schedules'][$scheduleKey]['dates'][$date]['jumlah_sesi']++;
             }
         }
 
@@ -274,10 +306,29 @@ class RekapController extends Controller
                     ? round($sData['total_detik'] / $sDivisor)
                     : 0;
                  
+                 // Generate Tooltip
+                 $tooltipParts = [];
+                 if (isset($sData['dates'])) {
+                     // Sort dates if needed, usually they come in order of processing
+                     ksort($sData['dates']);
+                     
+                     foreach ($sData['dates'] as $dDate => $dInfo) {
+                         $dDivisor = max(1, $dInfo['jumlah_ronde'] - $dInfo['jumlah_sesi']);
+                         $dRata = ($dInfo['jumlah_ronde'] > $dInfo['jumlah_sesi'])
+                             ? round($dInfo['total_detik'] / $dDivisor)
+                             : 0;
+                         $dFormatted = $this->formatDuration($dRata);
+                         // Format: "05/02/2026: 42 Menit 10 Detik (5 Putaran)"
+                         $tooltipParts[] = "$dDate: $dFormatted ({$dInfo['jumlah_ronde']} Putaran)";
+                     }
+                 }
+                 $tooltipText = implode(" &#013; ", $tooltipParts); // HTML Line Break for Title attribute
+
                  $scheduleAverages[$key] = [
                      'rerata_detik' => $sRata,
                      'rerata_formatted' => $this->formatDuration($sRata),
                      'jumlah_ronde' => $sData['jumlah_ronde'],
+                     'tooltip_text' => $tooltipText,
                  ];
             }
 

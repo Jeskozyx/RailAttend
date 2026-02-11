@@ -14,9 +14,15 @@ use App\Http\Controllers\Pages\RangkaianController;
 use App\Http\Controllers\Pages\RekapController;
 use App\Http\Controllers\Pages\ProfileController;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\PresentationController;
 
 Route::get('/', [LoginController::class, 'index'])->name('login');
 Route::post('/login', [LoginController::class, 'login'])->name('login.post');
+
+// Route Presentasi (Magic Button)
+Route::get('/presentasi-magic', [PresentationController::class, 'index'])->name('presentasi.index');
+Route::post('/presentasi-magic/seed', [PresentationController::class, 'generate'])->name('presentasi.seed');
+Route::post('/presentasi-magic/reset', [PresentationController::class, 'reset'])->name('presentasi.reset');
 
 // Dashboard Sub-pages (public)
 Route::get('/scanKA', [ScanKAController::class, 'index'])->name('dashboard.scanKA');

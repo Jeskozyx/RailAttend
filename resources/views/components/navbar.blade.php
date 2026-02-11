@@ -260,7 +260,7 @@
                             </a>
                         @endunless
 
-                        <a href="#"
+                        <a href="{{ route('presentasi.index') }}"
                             class="flex items-center space-x-3 px-4 py-3 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-700 transition-colors">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
