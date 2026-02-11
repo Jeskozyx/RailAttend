@@ -8,9 +8,18 @@ use App\Models\User;
 use App\Models\Schedule;
 use Illuminate\Http\Request;
 use Spatie\Permission\Models\Role;
+// use Maatwebsite\Excel\Facades\Excel; // Removed
+use App\Exports\RekapWaktuExport;
 
 class RekapController extends Controller
 {
+    public function export(Request $request)
+    {
+        $dateStr = date('Y-m-d_H-i');
+        // Instansiasi class export dan panggil method download
+        return (new RekapWaktuExport($request))->download("rekap_waktu_{$dateStr}.xlsx");
+    }
+
     public function index(Request $request)
     {
         // 1. Data Pendukung Filter
