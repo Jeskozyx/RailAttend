@@ -28,27 +28,33 @@ class RekapController extends Controller
         $schedules = Schedule::with('train')->orderBy('no_ka')->get();
 
         // 2. Query ke Tabel Baru (Cepat!)
-        $query = RekapWaktuKereta::with(['user.roles', 'schedule.train', 'scan_report.verifications.rangkaian']);
+        $query = RekapWaktuKereta::with(['user.roles', 'schedule.train', 'scan_report.verifications.rangkaian'])
+        ->join('users','rekap_waktu_kereta.user_id','=','users.id')
+        ->join('schedules','rekap_waktu_kereta.schedule_id','=','schedules.id')
+        ->join('trains','schedules.train_id','=','trains.id')
+        ->select('rekap_waktu_kereta.*');
 
         // Filter-filter
-        if ($request->user_id) $query->where('user_id', $request->user_id);
-        if ($request->schedule_id) $query->where('schedule_id', $request->schedule_id);
+        if ($request->user_id) $query->where('rekap_waktu_kereta.user_id', $request->user_id);
+        if ($request->schedule_id) $query->where('rekap_waktu_kereta.schedule_id', $request->schedule_id);
         
         // Default Date Range: Today if not specified
         $dateFrom = $request->date_from ?? now()->format('Y-m-d');
         $dateTo = $request->date_to ?? now()->format('Y-m-d');
         
-        $query->whereDate('tanggal', '>=', $dateFrom);
-        $query->whereDate('tanggal', '<=', $dateTo);
+        $query->whereDate('rekap_waktu_kereta.tanggal', '>=', $dateFrom);
+        $query->whereDate('rekap_waktu_kereta.tanggal', '<=', $dateTo);
         
         if ($request->role_id) {
-            $query->whereHas('user.roles', function($q) use ($request) {
-                $q->where('id', $request->role_id);
+            $query->whereHas('users.roles', function($q) use ($request) {
+                $q->where('users.id', $request->role_id);
             });
         }
 
         // Urutkan (Terlama di atas agar Putaran 1 duluan)
-        $rekapModels = $query->orderBy('waktu_awal', 'asc')->get();
+        $rekapModels = $query
+        ->orderBy('users.name','asc')
+        ->orderBy('rekap_waktu_kereta.waktu_awal', 'asc')->get();
 
         // 3. Transform Data untuk View (Kembalikan ke format array yang diharapkan View)
         $rekap = $rekapModels->map(function ($item) {
