@@ -118,6 +118,16 @@
                             </svg>
                             Filter
                         </button>
+
+                        <button type="submit" formaction="{{ route('rekap.export') }}"
+                            class="shrink-0 inline-flex items-center justify-center gap-2 px-6 py-3.5 bg-green-600 text-white rounded-xl text-sm font-semibold hover:bg-green-700 active:bg-green-800 transition-all shadow-md hover:shadow-lg transform hover:-translate-y-0.5">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z">
+                                </path>
+                            </svg>
+                            Export Excel
+                        </button>
                     </form>
                 </div>
 

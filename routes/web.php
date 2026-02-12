@@ -98,6 +98,7 @@ Route::middleware(['auth'])->group(function() {
     // Rekap Routes
     Route::prefix('rekap')->group(function () {
         Route::get('/', [RekapController::class, 'index'])->name('rekap.index');
+        Route::get('/export', [RekapController::class, 'export'])->name('rekap.export');
     });
 
     // Profile Routes
