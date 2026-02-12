@@ -82,6 +82,7 @@ class RekapController extends Controller
             $colorIndex = ($item->sesi_ke - 1) % count($sessionColors);
 
             return [
+                'id' => $item->id,
                 'ronde' => $item->ronde_ke,
                 'tanggal' => \Carbon\Carbon::parse($item->tanggal)->format('d/m/Y'),
                 'waktu_awal' => \Carbon\Carbon::parse($item->waktu_awal)->format('H:i:s'),

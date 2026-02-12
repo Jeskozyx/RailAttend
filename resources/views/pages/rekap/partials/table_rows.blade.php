@@ -1,7 +1,7 @@
 @forelse ($rekap ?? [] as $index => $item)
     {{-- Parent Row --}}
     @php
-        $rowId = ($item['user_id'] ?? 'u') . '-' . ($item['schedule_id'] ?? 's') . '-' . ($item['ronde'] ?? 'r');
+        $rowId = $item['id'];
     @endphp
     <tr class="parent-row hover:bg-gray-50/80 transition-colors cursor-pointer group border-l-4 {{ $item['session_color'] ?? 'border-transparent' }}"
         data-target="detail-{{ $rowId }}">
@@ -54,7 +54,14 @@
             </span>
         </td>
         <td class="px-4 py-4 align-top">
-            <span class="text-sm text-gray-600">{{ $item['jarak_waktu_formatted'] }}</span>
+            @if (($item['jarak_waktu_detik'] ?? 0) == 0)
+                <span
+                    class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-100 text-blue-800 border border-blue-200">
+                    {{ $item['jarak_waktu_formatted'] }}
+                </span>
+            @else
+                <span class="text-sm text-gray-600">{{ $item['jarak_waktu_formatted'] }}</span>
+            @endif
         </td>
         <td class="px-4 py-4 align-top">
             <div class="flex flex-col gap-1">

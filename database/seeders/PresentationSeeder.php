@@ -39,7 +39,7 @@ class PresentationSeeder extends Seeder
 
         /*
         =================================================
-        TAHAP 1: MASTER DATA (SAMA SEPERTI ASLI)
+        TAHAP 1: MASTER DATA 
         =================================================
         */
 
@@ -70,7 +70,7 @@ class PresentationSeeder extends Seeder
 
         /*
         =================================================
-        TRAINS & RANGKAIAN (SAMA)
+        TRAINS & RANGKAIAN 
         =================================================
         */
 
@@ -95,7 +95,7 @@ class PresentationSeeder extends Seeder
 
         /*
         =================================================
-        FIXED SCHEDULE MASTER
+        FIXED SCHEDULE  MASTER
         =================================================
         */
 
@@ -121,7 +121,7 @@ class PresentationSeeder extends Seeder
 
         /*
         =================================================
-        TAHAP 2: RECURRING LOGIC (INI YANG DIPERBAIKI)
+        TAHAP 2: RECURRING LOGIC 
         =================================================
         */
 
@@ -132,16 +132,20 @@ class PresentationSeeder extends Seeder
 
         foreach ($activeUsers as $user) {
 
-            // ✅ Setiap user punya 2 favorite schedule tetap
-            $favoriteSchedules = collect($fixedSchedules)->random(7);
+
+            $jumlahFavorit = rand(3, 7);
+
+
+            $jumlahFavorit = min($jumlahFavorit, count($fixedSchedules));
+
+            $favoriteSchedules = collect($fixedSchedules)->random($jumlahFavorit);
 
             $baseDate = Carbon::today()->subDays(6);
 
             for ($day = 0; $day < 10; $day++) {
 
                 $tglDinas = $baseDate->copy()->addDays($day);
-
-                // Pilih salah satu dari 2 favorit
+      
                 $selectedSchedule = $favoriteSchedules->random();
 
                 $jamBerangkat = Carbon::parse($selectedSchedule->departure_time);

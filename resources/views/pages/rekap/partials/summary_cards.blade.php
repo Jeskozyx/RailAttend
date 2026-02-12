@@ -98,12 +98,12 @@
                                         Putaran</p>
                                 </div>
                                 <div class="w-px h-8 bg-white/20"></div>
-                                <div class="text-center">
+                                {{-- <div class="text-center">
                                     <p class="text-2xl font-bold">{{ count($users) }}</p>
                                     <p class="text-xs text-blue-200 uppercase tracking-wider mt-1">Total
                                         User
                                     </p>
-                                </div>
+                                </div> --}}
                             </div>
                         </div>
                     </div>
