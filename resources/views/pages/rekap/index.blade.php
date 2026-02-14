@@ -140,7 +140,7 @@
                                     <th class="px-4 py-4 text-left w-12"></th>
                                     <th
                                         class="px-4 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                                        Putaran</th>
+                                        Sesi</th>
                                     <th
                                         class="px-4 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
                                         User</th>
@@ -149,19 +149,19 @@
                                         Jabatan</th>
                                     <th
                                         class="px-4 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                                        Waktu</th>
+                                        Waktu Sesi</th>
                                     <th
                                         class="px-4 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                                        Durasi</th>
+                                        Total Durasi</th>
                                     <th
                                         class="px-4 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                                        Jarak Waktu</th>
+                                        Rata-rata Jarak Waktu</th>
                                     <th
                                         class="px-4 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
                                         KA & SF</th>
                                     <th
                                         class="px-4 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                                        Status</th>
+                                        Jml Putaran</th>
                                 </tr>
                             </thead>
                             <tbody id="rekap-table-body" class="divide-y divide-gray-100">

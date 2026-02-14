@@ -26,7 +26,7 @@ class Verification extends Model
 
     public function rangkaian()
     {
-        return $this->belongsTo(Rangkaian::class);
+        return $this->belongsTo(Rangkaian::class)->withTrashed();
     }
 
     public function user()

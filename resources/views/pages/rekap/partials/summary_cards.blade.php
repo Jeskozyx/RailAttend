@@ -93,7 +93,7 @@
                         <div class="pt-6 border-t border-white/10">
                             <div class="flex items-center justify-between">
                                 <div class="text-center">
-                                    <p class="text-2xl font-bold">{{ count($rekap) }}</p>
+                                    <p class="text-2xl font-bold">{{ $totalRounds }}</p>
                                     <p class="text-xs text-blue-200 uppercase tracking-wider mt-1">Total
                                         Putaran</p>
                                 </div>

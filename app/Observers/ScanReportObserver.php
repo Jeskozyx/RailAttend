@@ -4,6 +4,7 @@ namespace App\Observers;
 
 use App\Models\ScanReport;
 use App\Models\RekapWaktuKereta;
+use App\Services\TimeGapService;
 use Carbon\Carbon;
 
 class ScanReportObserver
@@ -52,16 +53,12 @@ class ScanReportObserver
             // Hitung jarak dari SELESAI putaran sebelumnya ke MULAI putaran ini
             $lastEnd = Carbon::parse($lastRekap->waktu_akhir);
             
-            // Jika waktu mundur (data tidak urut), gap dianggap 0
-            if ($start->lessThan($lastEnd)) {
-                $gap = 0; 
-            } else {
-                $gap = $lastEnd->diffInSeconds($start);
-            }
+            // Gunakan Service untuk hitung gap dan cek sesi baru
+            $calc = TimeGapService::calculateSessionGap($start, $lastEnd);
+            $gap = $calc['gap'];
 
-            if ($gap > 25200) { // Jika istirahat > 7 Jam
+            if ($calc['is_new_session']) { // Jika istirahat > 7 Jam (via Service)
                 $sesiKe = $lastRekap->sesi_ke + 1; // Ganti Sesi
-                $gap = 0; // Reset gap jadi 0
                 $rondeKe = 1; // Reset ronde
             } else {
                 $sesiKe = $lastRekap->sesi_ke; // Lanjut Sesi

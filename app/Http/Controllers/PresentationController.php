@@ -11,6 +11,7 @@ use App\Models\Verification;
 use App\Models\Schedule;
 use App\Models\Rangkaian;
 use App\Models\Train;
+use App\Models\RekapWaktuKereta;
 
 class PresentationController extends Controller
 {
@@ -52,6 +53,7 @@ class PresentationController extends Controller
             DB::statement('SET FOREIGN_KEY_CHECKS=0;');
             
             // Bersihkan semua tabel terkait
+            RekapWaktuKereta::truncate();
             Verification::truncate();
             ScanReport::truncate();
             Schedule::truncate();

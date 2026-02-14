@@ -30,8 +30,8 @@ class PresentationSeeder extends Seeder
         Verification::truncate();
         ScanReport::truncate();
         Schedule::truncate();
-        Rangkaian::truncate();
-        Train::truncate();
+        // Rangkaian::truncate();
+        // Train::truncate();
         User::where('email', 'like', '%@railattend.simulasi')->delete();
         DB::statement('SET FOREIGN_KEY_CHECKS=1;');
 
@@ -74,24 +74,27 @@ class PresentationSeeder extends Seeder
         =================================================
         */
 
-        $trainNames = ['Cakrabuana', 'Ranggajati', 'Gunungjati', 'Cirebon Fakultatif'];
-        $trainRecords = [];
+        // $trainNames = ['Cakrabuana', 'Ranggajati', 'Gunungjati', 'Cirebon Fakultatif'];
+        // $trainRecords = [];
 
-        foreach ($trainNames as $name) {
-            $train = Train::create(['name' => $name]);
-            $trainRecords[] = $train;
+        // foreach ($trainNames as $name) {
+        //     $train = Train::create(['name' => $name]);
+        //     $trainRecords[] = $train;
 
-            for ($k = 1; $k <= 6; $k++) {
-                Rangkaian::create([
-                    'train_id' => $train->id,
-                    'name' => "K{$k}-" . rand(10, 99),
-                    'type' => 'Ekonomi',
-                    'urutan' => $k,
-                    'qr_code' => Str::random(10),
-                    'is_verified' => 0
-                ]);
-            }
-        }
+        //     for ($k = 1; $k <= 6; $k++) {
+        //         Rangkaian::create([
+        //             'train_id' => $train->id,
+        //             'name' => "K{$k}-" . rand(10, 99),
+        //             'type' => 'Ekonomi',
+        //             'urutan' => $k,
+        //             'qr_code' => Str::random(10),
+        //             'is_verified' => 0
+        //         ]);
+        //     }
+        // }
+        // Use Existing Trains
+        $trainRecords = Train::all();
+        $this->command->info('2. Memuat ' . $trainRecords->count() . ' data Kereta yang sudah ada...');
 
         /*
         =================================================
@@ -176,7 +179,7 @@ class PresentationSeeder extends Seeder
                     $currentScanTime = $waktuSimulasi->copy();
 
                     foreach ($gerbongs as $gerbong) {
-                        $currentScanTime->addSeconds(rand(15, 40));
+                        $currentScanTime->addSeconds(rand(60, 120));
 
                         Verification::create([
                             'schedule_id' => $selectedSchedule->id,
@@ -195,7 +198,7 @@ class PresentationSeeder extends Seeder
                         'updated_at' => $currentScanTime
                     ]);
 
-                    $waktuSimulasi = $currentScanTime->copy()->addMinutes(rand(20, 60));
+                    $waktuSimulasi = $currentScanTime->copy()->addMinutes(rand(20, 40));
                 }
             }
         }
