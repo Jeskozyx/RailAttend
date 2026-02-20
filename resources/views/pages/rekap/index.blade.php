@@ -70,15 +70,26 @@
                                 </div>
                             </div>
 
-                            <div class="relative min-w-[160px]">
+                            <div class="relative min-w-[200px]">
                                 <select name="schedule_id"
                                     class="w-full pl-3 pr-8 py-3.5 bg-white border border-gray-200 rounded-xl text-sm font-medium text-gray-700 focus:ring-2 focus:ring-blue-100 focus:border-blue-400 transition-all appearance-none cursor-pointer hover:border-blue-300">
-                                    <option value="">Semua Jadwal</option>
-                                    @foreach ($schedules ?? [] as $schedule)
-                                        <option value="{{ $schedule->id }}"
-                                            {{ ($scheduleId ?? '') == $schedule->id ? 'selected' : '' }}>
-                                            {{ $schedule->train?->name ?? '-' }} ({{ $schedule->no_ka }})
-                                        </option>
+                                    <option value="">Semua Jadwal / Kereta</option>
+                                    @foreach ($trains ?? [] as $train)
+                                        <optgroup label="{{ $train->name }}">
+                                            {{-- Option to select ALL schedules for this train --}}
+                                            <option value="train_{{ $train->id }}" class="font-bold text-blue-600 bg-blue-50"
+                                                {{ ($scheduleId ?? '') == 'train_' . $train->id ? 'selected' : '' }}>
+                                                Semua {{ $train->name }}
+                                            </option>
+
+                                            {{-- Individual Schedules --}}
+                                            @foreach ($train->schedules as $schedule)
+                                                <option value="{{ $schedule->id }}"
+                                                    {{ ($scheduleId ?? '') == $schedule->id ? 'selected' : '' }}>
+                                                    {{ $schedule->train?->name ?? '-' }} ({{ $schedule->no_ka }})
+                                                </option>
+                                            @endforeach
+                                        </optgroup>
                                     @endforeach
                                 </select>
                                 <div class="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">

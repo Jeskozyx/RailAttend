@@ -283,9 +283,12 @@ class ScheduleController extends Controller
         }
 
         // Finalisasi Laporan
+        $notes = $request->condition === 'incident' ? $request->description : 'OK';
+
         $report->update([
             'status' => 'completed',
-            'submitted_at' => Carbon::now()
+            'submitted_at' => Carbon::now(),
+            'notes' => $notes
         ]);
 
         // Karena status sudah 'completed', saat user masuk lagi, 

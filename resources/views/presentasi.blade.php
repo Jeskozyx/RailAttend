@@ -1,180 +1,167 @@
 <!DOCTYPE html>
-<html lang="id">
+<html lang="en">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RailAttend - Presentation Mode</title>
+    <title>RailAttend - Presentation Command Center</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
     <style>
         body {
             font-family: 'JetBrains Mono', monospace;
         }
 
-        .loader {
-            border: 3px solid rgba(255, 255, 255, 0.1);
-            border-left-color: #3b82f6;
-            border-radius: 50%;
-            width: 24px;
-            height: 24px;
-            animation: spin 1s linear infinite;
-        }
-
-        @keyframes spin {
-            0% {
-                transform: rotate(0deg);
-            }
-
-            100% {
-                transform: rotate(360deg);
-            }
-        }
-
-        /* Animasi Glitch untuk tombol reset */
-        .glitch-hover:hover {
-            animation: glitch 0.3s cubic-bezier(.25, .46, .45, .94) both infinite;
-            color: #ef4444;
-        }
-
-        @keyframes glitch {
-            0% {
-                transform: translate(0)
-            }
-
-            20% {
-                transform: translate(-2px, 2px)
-            }
-
-            40% {
-                transform: translate(-2px, -2px)
-            }
-
-            60% {
-                transform: translate(2px, 2px)
-            }
-
-            80% {
-                transform: translate(2px, -2px)
-            }
-
-            100% {
-                transform: translate(0)
-            }
+        .cyber-grid {
+            background-image: linear-gradient(rgba(0, 255, 65, 0.05) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 255, 65, 0.05) 1px, transparent 1px);
+            background-size: 20px 20px;
         }
     </style>
 </head>
 
-<body class="bg-gray-900 text-gray-200 h-screen flex flex-col items-center justify-center overflow-hidden relative">
+<body
+    class="bg-gray-900 text-green-400 min-h-screen flex items-center justify-center relative overflow-hidden cyber-grid">
 
-    <div class="absolute inset-0 opacity-10 pointer-events-none"
-        style="background-image: linear-gradient(#374151 1px, transparent 1px), linear-gradient(90deg, #374151 1px, transparent 1px); background-size: 40px 40px;">
+    <!-- Ambient Glow -->
+    <div
+        class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-green-500/10 blur-[100px] rounded-full pointer-events-none">
     </div>
 
-    <div class="relative z-10 w-full max-w-2xl px-4 text-center">
+    <div class="relative z-10 w-full max-w-4xl px-4">
 
-        <div class="mb-10">
+        <!-- Header -->
+        <div class="text-center mb-12">
             <h1
-                class="text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-cyan-300 tracking-tighter mb-4">
-                SYSTEM OVERRIDE
+                class="text-4xl md:text-5xl font-bold tracking-tighter mb-4 text-white drop-shadow-[0_0_10px_rgba(0,255,65,0.5)]">
+                PRESENTATION MODE
             </h1>
-            <p class="text-gray-400 text-lg">Presentation Data Generator Module v1.0</p>
+            <div class="flex items-center justify-center gap-2 text-sm text-green-500/80">
+                <span class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+                SYSTEM READY
+            </div>
         </div>
 
+        <!-- Alert System -->
         @if (session('success'))
-            <div class="mb-8 p-4 bg-green-500/10 border border-green-500/50 rounded-lg text-green-400 animate-bounce">
-                <span class="font-bold">✓ SYSTEM STATUS:</span> {{ session('success') }}
+            <div
+                class="mb-8 p-4 bg-green-500/10 border border-green-500 text-green-400 rounded-lg text-center backdrop-blur-sm animate-fade-in-down">
+                <span class="font-bold">✓ SUCCESS:</span> {{ session('success') }}
             </div>
         @endif
 
         @if (session('error'))
-            <div class="mb-8 p-4 bg-red-500/10 border border-red-500/50 rounded-lg text-red-400">
-                <span class="font-bold">✕ SYSTEM FAILURE:</span> {{ session('error') }}
+            <div
+                class="mb-8 p-4 bg-red-500/10 border border-red-500 text-red-400 rounded-lg text-center backdrop-blur-sm animate-fade-in-down">
+                <span class="font-bold">⚠ ERROR:</span> {{ session('error') }}
             </div>
         @endif
 
-        <form action="{{ route('presentasi.seed') }}" method="POST" onsubmit="return startProcess()" class="mb-12">
-            @csrf
+        <!-- The Magic Actions -->
+        <div x-data="{ loading: false, resetting: false }" class="flex flex-col md:flex-row items-center justify-center gap-8">
 
-            <button type="submit" id="magicBtn"
-                class="group relative inline-flex items-center justify-center w-64 h-64 rounded-full bg-gray-800 border-4 border-gray-700 shadow-[0_0_50px_rgba(59,130,246,0.1)] hover:shadow-[0_0_80px_rgba(59,130,246,0.4)] hover:border-blue-500 transition-all duration-500 focus:outline-none">
+            <!-- SEED BUTTON -->
+            <div class="text-center w-full md:w-auto">
+                <form action="{{ route('presentation.seed') }}" method="POST" @submit="loading = true">
+                    @csrf
+                    <button type="submit" :disabled="loading || resetting"
+                        class="group relative inline-flex items-center justify-center w-full md:w-80 h-32 text-xl font-bold text-black transition-all duration-200 bg-green-500 hover:bg-green-400 focus:outline-none focus:ring-4 focus:ring-green-500/50 disabled:opacity-50 disabled:cursor-not-allowed clip-path-polygon">
 
-                <span
-                    class="absolute inset-4 rounded-full border border-gray-600 border-dashed opacity-50 group-hover:rotate-180 transition-transform duration-[10s]"></span>
+                        <div
+                            class="absolute inset-0 w-full h-full bg-white opacity-0 group-hover:opacity-20 transition-opacity">
+                        </div>
 
-                <div class="flex flex-col items-center justify-center z-20">
-                    <div id="btnIcon" class="text-blue-500 mb-2 transform group-hover:scale-110 transition-transform">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16" fill="none" viewBox="0 0 24 24"
-                            stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
-                                d="M19.428 15.428a2 2 0 00-1.022-.547l-2.384-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
-                        </svg>
-                    </div>
-                    <span id="btnText"
-                        class="text-xl font-bold text-gray-100 tracking-widest group-hover:text-blue-400 transition-colors">
-                        INITIATE
-                    </span>
-                    <div id="loader" class="hidden mt-2">
-                        <div class="loader"></div>
-                    </div>
-                </div>
-            </button>
-        </form>
+                        <div class="flex flex-col items-center gap-2">
+                            <span x-show="!loading" class="flex flex-col items-center">
+                                <svg class="w-10 h-10 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                                </svg>
+                                EXECUTE SEEDER
+                            </span>
 
-        <form action="{{ route('presentasi.reset') }}" method="POST" onsubmit="return confirmReset()">
-            @csrf
-            <button type="submit"
-                class="group flex items-center justify-center space-x-2 mx-auto text-gray-600 hover:text-red-500 transition-colors duration-300">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 group-hover:animate-pulse" fill="none"
-                    viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                        d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                </svg>
-                <span
-                    class="text-sm font-bold tracking-widest border-b border-transparent group-hover:border-red-500 glitch-hover">
-                    PURGE ALL DUMMY DATA
-                </span>
-            </button>
-        </form>
-
-        <div class="mt-12 grid grid-cols-3 gap-6 border-t border-gray-800 pt-8">
-            <div>
-                <div class="text-3xl font-bold text-white">{{ isset($stats['users']) ? $stats['users'] : '-' }}</div>
-                <div class="text-xs text-gray-500 uppercase mt-1">Total Users</div>
+                            <span x-show="loading" class="flex flex-col items-center" style="display: none;">
+                                <svg class="animate-spin w-10 h-10 mb-2 text-black" xmlns="http://www.w3.org/2000/svg"
+                                    fill="none" viewBox="0 0 24 24">
+                                    <circle class="opacity-25" cx="12" cy="12" r="10"
+                                        stroke="currentColor" stroke-width="4"></circle>
+                                    <path class="opacity-75" fill="currentColor"
+                                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
+                                    </path>
+                                </svg>
+                                PROCESSING...
+                            </span>
+                        </div>
+                    </button>
+                    <p class="mt-3 text-xs text-gray-500">Generates 20 Users & Simulation Data</p>
+                </form>
             </div>
-            <div>
-                <div class="text-3xl font-bold text-blue-400">{{ isset($stats['scans']) ? $stats['scans'] : '-' }}</div>
-                <div class="text-xs text-gray-500 uppercase mt-1">Scan Records</div>
+
+            <!-- RESET BUTTON -->
+            <div class="text-center w-full md:w-auto">
+                <form action="{{ route('presentation.reset') }}" method="POST" @submit="resetting = true"
+                    onsubmit="return confirm('WARNING: THIS WILL DELETE ALL DATA. ARE YOU SURE?');">
+                    @csrf
+                    <button type="submit" :disabled="loading || resetting"
+                        class="group relative inline-flex items-center justify-center w-full md:w-80 h-32 text-xl font-bold text-red-500 transition-all duration-200 bg-transparent border-2 border-red-500 hover:bg-red-500 hover:text-black focus:outline-none focus:ring-4 focus:ring-red-500/50 disabled:opacity-50 disabled:cursor-not-allowed">
+
+                        <div class="flex flex-col items-center gap-2">
+                            <span x-show="!resetting" class="flex flex-col items-center">
+                                <svg class="w-10 h-10 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16">
+                                    </path>
+                                </svg>
+                                RESET DATABASE
+                            </span>
+
+                            <span x-show="resetting" class="flex flex-col items-center" style="display: none;">
+                                <svg class="animate-spin w-10 h-10 mb-2" xmlns="http://www.w3.org/2000/svg"
+                                    fill="none" viewBox="0 0 24 24">
+                                    <circle class="opacity-25" cx="12" cy="12" r="10"
+                                        stroke="currentColor" stroke-width="4"></circle>
+                                    <path class="opacity-75" fill="currentColor"
+                                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
+                                    </path>
+                                </svg>
+                                WIPING DATA...
+                            </span>
+                        </div>
+                    </button>
+                    <p class="mt-3 text-xs text-gray-500">Deletes Users, Trains, Schedules</p>
+                </form>
             </div>
-            <div>
-                <div class="text-3xl font-bold text-green-400">READY</div>
-                <div class="text-xs text-gray-500 uppercase mt-1">System Status</div>
+
+        </div>
+
+        <!-- Stats Grid -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-16 border-t border-gray-800 pt-8">
+            <div class="text-center">
+                <div class="text-2xl font-bold text-white">20</div>
+                <div class="text-xs text-green-500/60 uppercase tracking-widest">Users</div>
+            </div>
+            <div class="text-center">
+                <div class="text-2xl font-bold text-white">4</div>
+                <div class="text-xs text-green-500/60 uppercase tracking-widest">Trains</div>
+            </div>
+            <div class="text-center">
+                <div class="text-2xl font-bold text-white">16</div>
+                <div class="text-xs text-green-500/60 uppercase tracking-widest">Schedules</div>
+            </div>
+            <div class="text-center">
+                <div class="text-2xl font-bold text-white">~3k</div>
+                <div class="text-xs text-green-500/60 uppercase tracking-widest">Verifications</div>
             </div>
         </div>
+
     </div>
 
-    <script>
-        function startProcess() {
-            const btn = document.getElementById('magicBtn');
-            const icon = document.getElementById('btnIcon');
-            const text = document.getElementById('btnText');
-            const loader = document.getElementById('loader');
+    <!-- Scanline Effect -->
+    <div
+        class="pointer-events-none absolute inset-0 bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.25)_50%),linear-gradient(90deg,rgba(255,0,0,0.06),rgba(0,255,0,0.02),rgba(0,0,255,0.06))] z-50 bg-[length:100%_2px,3px_100%] opacity-20">
+    </div>
 
-            btn.classList.add('cursor-not-allowed', 'opacity-75');
-            btn.classList.remove('hover:shadow-[0_0_80px_rgba(59,130,246,0.4)]', 'hover:border-blue-500');
-            icon.classList.add('hidden');
-            text.innerText = "PROCESSING";
-            loader.classList.remove('hidden');
-
-            return true;
-        }
-
-        function confirmReset() {
-            return confirm(
-                '⚠️ PERINGATAN KERAS ⚠️\n\nAnda akan menghapus SEMUA data dummy (Users, Jadwal, Scan).\n\nLanjutkan pemusnahan data?'
-                );
-        }
-    </script>
 </body>
 
 </html>

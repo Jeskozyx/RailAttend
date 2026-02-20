@@ -147,11 +147,31 @@
                                                     'warning' => 'bg-amber-100 text-amber-800 border-amber-200',
                                                     'danger' => 'bg-red-100 text-red-800 border-red-200',
                                                 ];
-                                                $status = $round['status'] ?? 'normal';
+
+                                                $statusColors = [
+                                                    'normal' => 'bg-emerald-100 text-emerald-800 border-emerald-200',
+                                                    'warning' => 'bg-amber-100 text-amber-800 border-amber-200',
+                                                    'danger' => 'bg-red-100 text-red-800 border-red-200',
+                                                ];
+
+                                                $statusKey = $round['status'] ?? 'normal';
+                                                $statusLabel = ucfirst($statusKey);
+
+                                                if (isset($round['notes'])) {
+                                                    if ($round['notes'] === 'OK') {
+                                                        // Aman -> Force OK Hijau
+                                                        $statusKey = 'normal';
+                                                        $statusLabel = 'OK';
+                                                    } else {
+                                                        // Insiden -> Force Danger Merah + Keterangan
+                                                        $statusKey = 'danger';
+                                                        $statusLabel = $round['notes'];
+                                                    }
+                                                }
                                             @endphp
                                             <span
-                                                class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold border {{ $statusColors[$status] ?? $statusColors['normal'] }}">
-                                                {{ ucfirst($status) }}
+                                                class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold border {{ $statusColors[$statusKey] ?? $statusColors['normal'] }}">
+                                                {{ $statusLabel }}
                                             </span>
                                         </td>
                                     </tr>
@@ -190,7 +210,7 @@
                                                             <div
                                                                 class="flex flex-col items-center justify-center -mx-2">
                                                                 <span
-                                                                    class="text-[9px] text-gray-500 font-mono mb-0.5">{{ $scan['gap_to_next'] }}</span>
+                                                                    class="text-[12px] text-gray-500 font-mono mb-0.5">{{ $scan['gap_to_next'] }}</span>
                                                                 <svg class="w-4 h-4 text-gray-300 transform"
                                                                     fill="none" stroke="currentColor"
                                                                     viewBox="0 0 24 24">

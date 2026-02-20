@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\RekapWaktuKereta; // Pakai Model Baru
 use App\Models\User;
 use App\Models\Schedule;
+use App\Models\Train;
 use Illuminate\Http\Request;
 use Spatie\Permission\Models\Role;
 use App\Services\TimeGapService;
@@ -26,7 +27,13 @@ class RekapController extends Controller
         // 1. Data Pendukung Filter
         $users = User::whereDoesntHave('roles', fn($q) => $q->where('name', 'Admin'))->orderBy('name')->get();
         $roles = Role::where('name', '!=', 'Admin')->orderBy('name')->get();
-        $schedules = Schedule::with('train')->orderBy('no_ka')->get();
+        
+        // Eager load schedules to build grouped dropdown
+        $trains = Train::with(['schedules' => function($q) {
+            $q->orderBy('no_ka');
+        }])->orderBy('name')->get();
+        
+        // $schedules = Schedule::with('train')->orderBy('no_ka')->get(); // No longer needed as separate list
 
         // 2. Query ke Tabel Baru (Cepat!)
         $query = RekapWaktuKereta::with(['user.roles', 'schedule.train', 'scan_report.verifications.rangkaian'])
@@ -36,8 +43,19 @@ class RekapController extends Controller
         ->select('rekap_waktu_kereta.*');
 
         // Filter-filter
-        if ($request->user_id) $query->where('rekap_waktu_kereta.user_id', $request->user_id);
-        if ($request->schedule_id) $query->where('rekap_waktu_kereta.schedule_id', $request->schedule_id);
+        // Filter Logic for Merged Dropdown (schedule_id can be "train_X" or "X")
+        if ($request->schedule_id) {
+            if (str_starts_with($request->schedule_id, 'train_')) {
+                // Formatting "train_ID" -> Filter by Train
+                $trainId = str_replace('train_', '', $request->schedule_id);
+                $query->where('schedules.train_id', $trainId);
+            } else {
+                // Start with numeric -> Filter by specific Schedule
+                $query->where('rekap_waktu_kereta.schedule_id', $request->schedule_id);
+            }
+        }
+
+        // if ($request->train_id) $query->where('schedules.train_id', $request->train_id); // Removed separate filter
         
         // Default Date Range: Today if not specified
         $dateFrom = $request->date_from ?? now()->format('Y-m-d');
@@ -99,10 +117,20 @@ class RekapController extends Controller
                 if ($item->scan_report && $item->scan_report->verifications) {
                     $verifications = $item->scan_report->verifications->sortBy('verified_at')->values();
                     
-                    // Determine Submit Time from last scan (most reliable for "Scan Completion")
-                    $lastScan = $verifications->last();
-                    if ($lastScan) {
-                        $submitTimeCarbon = \Carbon\Carbon::parse($lastScan->verified_at);
+                    // --- REVISI LOGIKA SUBMIT TIME ---
+                    // Prioritas 1: Ambil waktu user KLIK TOMBOL (dari database submitted_at atau updated_at)
+                    if ($item->scan_report->submitted_at) {
+                        $submitTimeCarbon = \Carbon\Carbon::parse($item->scan_report->submitted_at);
+                    } 
+                    elseif ($item->scan_report->updated_at) {
+                        $submitTimeCarbon = $item->scan_report->updated_at;
+                    }
+                    // Prioritas 2: Jika data error/kosong, baru ambil scan terakhir (Fallback)
+                    else {
+                        $lastScan = $verifications->last();
+                        if ($lastScan) {
+                            $submitTimeCarbon = \Carbon\Carbon::parse($lastScan->verified_at);
+                        }
                     }
 
                     foreach ($verifications as $idx => $verification) {
@@ -137,15 +165,31 @@ class RekapController extends Controller
                 $gapFormatted = '-';
 
                 if ($prevItem) {
-                    // Get Previous Submit Time correctly
-                    $prevVerifs = $prevItem->scan_report ? $prevItem->scan_report->verifications : null;
+                    // --- PERBAIKAN LOGIKA GAP ---
+                    // Ambil waktu Selesai (Submit) dari ronde sebelumnya dengan benar
                     $prevSubmitTime = null;
-                    
-                    if ($prevVerifs && $prevVerifs->count() > 0) {
-                        $prevSubmitTime = \Carbon\Carbon::parse($prevVerifs->sortBy('verified_at')->last()->verified_at);
-                    } else {
-                        $prevSubmitTime = $prevItem->scan_report ? $prevItem->scan_report->updated_at : \Carbon\Carbon::parse($prevItem->waktu_akhir);
+
+                    // Cek apakah previous item punya data scan report & submitted_at
+                    if ($prevItem->scan_report) {
+                        if ($prevItem->scan_report->submitted_at) {
+                            // Prioritas 1: Waktu Klik Tombol Submit
+                            $prevSubmitTime = \Carbon\Carbon::parse($prevItem->scan_report->submitted_at);
+                        } elseif ($prevItem->scan_report->updated_at) {
+                            // Prioritas 2: Waktu Update Terakhir
+                            $prevSubmitTime = $prevItem->scan_report->updated_at;
+                        }
                     }
+
+                    // Fallback: Jika tidak ada data submit, baru pakai scan terakhir atau waktu akhir rekap
+                    if (!$prevSubmitTime) {
+                        $prevVerifs = $prevItem->scan_report ? $prevItem->scan_report->verifications : null;
+                        if ($prevVerifs && $prevVerifs->count() > 0) {
+                            $prevSubmitTime = \Carbon\Carbon::parse($prevVerifs->sortBy('verified_at')->last()->verified_at);
+                        } else {
+                            $prevSubmitTime = \Carbon\Carbon::parse($prevItem->waktu_akhir);
+                        }
+                    }
+                    // -----------------------------
 
                     $currStart = \Carbon\Carbon::parse($item->waktu_awal);
                     
@@ -155,7 +199,7 @@ class RekapController extends Controller
                 } else {
                     $gapFormatted = 'Awal Putaran';
                 }
-
+                
                 return [
                     'id' => $item->id,
                     'ronde' => $key + 1, // Force sequential 1-based index (Fixes "Putaran 9" issue)
@@ -166,6 +210,7 @@ class RekapController extends Controller
                     'jarak_waktu_detik' => $gapSeconds,
                     'jarak_waktu_formatted' => $gapFormatted,
                     'status' => $item->status,
+                    'notes' => $item->scan_report->notes ?? null,
                     'details' => $details,
                     'waktu_submit' => $submitTimeCarbon->format('H:i:s'),
                     // Inherit session info for consistency/debugging
@@ -336,10 +381,12 @@ class RekapController extends Controller
             'rekap' => $rekap, // Now strictly an array/collection of arrays (SESSIONS)
             'users' => $users,
             'roles' => $roles,
-            'schedules' => $schedules,
+            'trains' => $trains, // Passing trains with eager loaded schedules
+            // 'schedules' => $schedules, // Removed
             'dateFrom' => $dateFrom,
             'dateTo' => $dateTo,
             'userId' => $request->user_id,
+            // 'trainId' => $request->train_id, // Removed
             'scheduleId' => $request->schedule_id,
             'roleId' => $request->role_id,
             'userAverages' => $userAverages,

@@ -31,6 +31,20 @@
             transform: translateY(-4px);
             box-shadow: 0 20px 30px -10px rgba(255, 115, 0, 0.4);
         }
+
+        /* Animasi untuk Textarea */
+        #incidentDescriptionContainer {
+            transition: all 0.3s ease-in-out;
+            max-height: 0;
+            opacity: 0;
+            overflow: hidden;
+        }
+
+        #incidentDescriptionContainer.show {
+            max-height: 200px;
+            opacity: 1;
+            margin-top: 1rem;
+        }
     </style>
 @endpush
 
@@ -38,7 +52,6 @@
     <div class="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 py-6">
         <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
 
-            <!-- Header Title - Jadwal Kereta -->
             <div class="mb-4">
                 <div class="flex items-center space-x-3 mb-2">
                     <div class="h-1 w-10 bg-[#FF7300] rounded-full"></div>
@@ -47,11 +60,9 @@
                 <h2 class="text-2xl sm:text-3xl font-bold text-[#001D4B]">Informasi Perjalanan</h2>
             </div>
 
-            <!-- Info Jadwal Kereta -->
             <div class="mb-8">
                 <div class="w-full bg-white rounded-2xl shadow-lg border border-slate-200 overflow-hidden">
 
-                    <!-- Header Card -->
                     <div class="bg-gradient-to-r from-[#001D4B] to-[#003D7A] px-6 py-4">
                         <div class="flex items-center justify-between">
                             <div class="flex items-center space-x-3">
@@ -82,10 +93,8 @@
                         </div>
                     </div>
 
-                    <!-- Route Info -->
                     <div class="p-6">
                         <div class="flex items-center justify-between">
-                            <!-- Departure -->
                             <div class="text-center">
                                 <p class="text-xs text-slate-500 font-semibold mb-1">KEBERANGKATAN</p>
                                 <p class="text-2xl sm:text-3xl font-bold text-[#001D4B] mb-1">{{ $schedule->origin }}</p>
@@ -94,7 +103,6 @@
                                 <p class="text-xs text-slate-500">WIB</p>
                             </div>
 
-                            <!-- Arrow -->
                             <div class="flex flex-col items-center px-4">
                                 <svg class="w-10 h-10 sm:w-12 sm:h-12 text-[#FF7300]" fill="none" stroke="currentColor"
                                     viewBox="0 0 24 24">
@@ -112,7 +120,6 @@
                                 <p class="text-xs text-slate-400 mt-1">{{ $diff->format('%h jam %i menit') }}</p>
                             </div>
 
-                            <!-- Arrival -->
                             <div class="text-center">
                                 <p class="text-xs text-slate-500 font-semibold mb-1">KEDATANGAN</p>
                                 <p class="text-2xl sm:text-3xl font-bold text-[#001D4B] mb-1">{{ $schedule->destination }}
@@ -126,7 +133,6 @@
                 </div>
             </div>
 
-            <!-- Section Header - Stanformasi -->
             <div class="mb-6">
                 <div class="flex items-center justify-between">
                     <div>
@@ -143,7 +149,6 @@
                 </div>
             </div>
 
-            <!-- Grid Gerbong -->
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
                 @forelse ($schedule->train->rangkaians as $rangkaian)
                     @php
@@ -191,7 +196,6 @@
                                     </div>
                                 </div>
 
-                                <!-- Stats -->
                                 <div class="flex items-center space-x-4 pt-4 border-t border-white/20">
                                     <div class="flex items-center space-x-2">
                                         <span class="text-white/90 text-sm font-semibold">Urutan:
@@ -215,18 +219,102 @@
                     </div>
                 @endforelse
             </div>
+
             <div class="mt-8 pb-10">
-                <form action="{{ route('kondektur.submit_report') }}" method="POST">
+                <form action="{{ route('kondektur.submit_report') }}" method="POST" id="submitReportForm">
                     @csrf
                     <input type="hidden" name="schedule_id" value="{{ $schedule->id }}">
+
+                    <div class="bg-white rounded-2xl p-6 shadow-md border border-slate-200 mb-6">
+                        <h4 class="text-lg font-bold text-[#001D4B] mb-4">Kondisi Perjalanan</h4>
+
+                        <div class="flex flex-col sm:flex-row gap-4">
+                            <label
+                                class="relative flex items-center p-4 border rounded-xl cursor-pointer hover:bg-slate-50 transition-colors border-slate-200 has-[:checked]:border-green-500 has-[:checked]:bg-green-50">
+                                <input type="radio" name="condition" value="safe"
+                                    class="peer h-5 w-5 text-green-600 border-gray-300 focus:ring-green-500 condition-radio"
+                                    checked>
+                                <div class="ml-3">
+                                    <span class="block text-sm font-bold text-slate-900 peer-checked:text-green-700">Aman /
+                                        Terkendali</span>
+                                    <span class="block text-xs text-slate-500">Tidak ada kendala selama perjalanan</span>
+                                </div>
+                            </label>
+
+                            <label
+                                class="relative flex items-center p-4 border rounded-xl cursor-pointer hover:bg-slate-50 transition-colors border-slate-200 has-[:checked]:border-red-500 has-[:checked]:bg-red-50">
+                                <input type="radio" name="condition" value="incident"
+                                    class="peer h-5 w-5 text-red-600 border-gray-300 focus:ring-red-500 condition-radio">
+                                <div class="ml-3">
+                                    <span class="block text-sm font-bold text-slate-900 peer-checked:text-red-700">Ada
+                                        Insiden / Kendala</span>
+                                    <span class="block text-xs text-slate-500">Terdapat masalah yang perlu
+                                        dilaporkan</span>
+                                </div>
+                            </label>
+                        </div>
+
+                        <div id="incidentDescriptionContainer">
+                            <label for="description" class="block text-sm font-medium text-slate-700 mb-2">Deskripsi
+                                Insiden</label>
+                            <textarea name="description" id="description" rows="3"
+                                class="w-full rounded-xl border-slate-300 shadow-sm focus:border-red-500 focus:ring-red-500"
+                                placeholder="Jelaskan secara singkat kendala atau insiden yang terjadi..."></textarea>
+                        </div>
+                    </div>
+
+                    @php
+                        $unverifiedCount = $schedule->train->rangkaians->where('is_verified', false)->count();
+                    @endphp
+
                     <button type="submit"
                         class="w-full py-4 rounded-2xl font-black tracking-widest text-white transition-all shadow-lg
-                    {{ $schedule->train->rangkaians->where('is_verified', false)->count() > 0 ? 'bg-slate-300 cursor-not-allowed' : 'bg-indigo-600 hover:bg-indigo-700 active:scale-95 shadow-indigo-200' }}"
-                        {{ $schedule->train->rangkaians->where('is_verified', false)->count() > 0 ? 'disabled' : '' }}>
+                    {{ $unverifiedCount > 0 ? 'bg-slate-300 cursor-not-allowed' : 'bg-indigo-600 hover:bg-indigo-700 active:scale-95 shadow-indigo-200' }}"
+                        {{ $unverifiedCount > 0 ? 'disabled' : '' }}>
                         KIRIM LAPORAN SCAN
                     </button>
+                    @if ($unverifiedCount > 0)
+                        <p class="text-center text-xs text-red-500 mt-2 font-semibold">
+                            *Selesaikan scan seluruh gerbong ({{ $unverifiedCount }} tersisa) untuk mengirim laporan.
+                        </p>
+                    @endif
                 </form>
             </div>
         </div>
     </div>
+
+    @push('js')
+        <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                const radios = document.querySelectorAll('.condition-radio');
+                const container = document.getElementById('incidentDescriptionContainer');
+                const textarea = document.getElementById('description');
+
+                function toggleDescription() {
+                    let isIncident = false;
+                    radios.forEach(radio => {
+                        if (radio.checked && radio.value === 'incident') {
+                            isIncident = true;
+                        }
+                    });
+
+                    if (isIncident) {
+                        container.classList.add('show');
+                        textarea.setAttribute('required', 'required');
+                    } else {
+                        container.classList.remove('show');
+                        textarea.removeAttribute('required');
+                        textarea.value = '';
+                    }
+                }
+
+                radios.forEach(radio => {
+                    radio.addEventListener('change', toggleDescription);
+                });
+
+                // Initial Check
+                toggleDescription();
+            });
+        </script>
+    @endpush
 @endsection

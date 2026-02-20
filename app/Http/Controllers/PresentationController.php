@@ -4,71 +4,62 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Artisan;
-use Illuminate\Support\Facades\DB; // Tambahan penting untuk DB::statement
-use App\Models\User;
-use App\Models\ScanReport;
-use App\Models\Verification;
-use App\Models\Schedule;
-use App\Models\Rangkaian;
-use App\Models\Train;
-use App\Models\RekapWaktuKereta;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 class PresentationController extends Controller
 {
-    // 1. TAMPILKAN HALAMAN
     public function index()
     {
-        $stats = [
-            'users' => User::count(),
-            'scans' => ScanReport::count(),
-        ];
-
-        return view('presentasi', compact('stats'));
+        return view('presentasi');
     }
 
-    // 2. GENERATE DATA (TOMBOL INITIATE)
     public function generate(Request $request)
     {
-        set_time_limit(300); // 5 Menit max execution
-
-        try {
-            Artisan::call('db:seed', [
-                '--class' => 'PresentationSeeder'
-            ]);
-
-            return redirect()->back()->with('success', 'Data berhasil digenerate! Sistem siap untuk demo.');
-            
-        } catch (\Exception $e) {
-            return redirect()->back()->with('error', 'Terjadi kesalahan generate: ' . $e->getMessage());
-        }
-    }
-
-    // 3. HAPUS DATA (TOMBOL PURGE) - INI YANG TADI HILANG
-    public function reset(Request $request)
-    {
+        // Increase time limit for robust seeding
         set_time_limit(300);
 
         try {
-            // Matikan Foreign Key Check biar bisa truncate paksa
-            DB::statement('SET FOREIGN_KEY_CHECKS=0;');
-            
-            // Bersihkan semua tabel terkait
-            RekapWaktuKereta::truncate();
-            Verification::truncate();
-            ScanReport::truncate();
-            Schedule::truncate();
-            Rangkaian::truncate();
-            Train::truncate();
-            
-            // Hapus user dummy saja (sisakan admin asli jika ada)
-            User::where('email', 'like', '%@railattend.simulasi')->delete();
-            
-            DB::statement('SET FOREIGN_KEY_CHECKS=1;');
+            // Optional: Truncate tables for a clean slate
+            // We disable foreign key checks to allow truncation
+            Schema::disableForeignKeyConstraints();
+            DB::table('users')->truncate();
+            DB::table('trains')->truncate();
+            DB::table('rangkaians')->truncate();
+            DB::table('schedules')->truncate();
+            DB::table('scan_reports')->truncate();
+            DB::table('verifications')->truncate();
+            DB::table('model_has_roles')->truncate();
+            // We don't truncate 'roles' and 'permissions' usually, but seeder handles creation.
+            Schema::enableForeignKeyConstraints();
 
-            return redirect()->back()->with('success', 'SUKSES! Semua data dummy telah dimusnahkan.');
-            
+            // Run the Seeder
+            Artisan::call('db:seed', ['--class' => 'PresentationSeeder']);
+
+            return redirect()->back()->with('success', 'Magic! Database has been populated with presentation data.');
         } catch (\Exception $e) {
-            return redirect()->back()->with('error', 'Gagal reset data: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'Magic Failed: ' . $e->getMessage());
+        }
+    }
+    public function destroy()
+    {
+        try {
+            Schema::disableForeignKeyConstraints();
+            DB::table('users')->truncate();
+            DB::table('trains')->truncate();
+            DB::table('rangkaians')->truncate();
+            DB::table('schedules')->truncate();
+            DB::table('scan_reports')->truncate();
+            DB::table('verifications')->truncate();
+            DB::table('model_has_roles')->truncate();
+            Schema::enableForeignKeyConstraints();
+
+            // Re-seed Base Data (Permissions, Roles, Base Users)
+            Artisan::call('db:seed', ['--class' => 'DatabaseSeeder']); 
+            
+            return redirect()->back()->with('success', 'Database RESET to initial state (Base data restored).');
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error', 'Reset Failed: ' . $e->getMessage());
         }
     }
 }
