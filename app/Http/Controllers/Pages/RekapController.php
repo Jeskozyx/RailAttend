@@ -36,7 +36,13 @@ class RekapController extends Controller
         // $schedules = Schedule::with('train')->orderBy('no_ka')->get(); // No longer needed as separate list
 
         // 2. Query ke Tabel Baru (Cepat!)
-        $query = RekapWaktuKereta::with(['user.roles', 'schedule.train', 'scan_report.verifications.rangkaian'])
+        $query = RekapWaktuKereta::with([
+            'user.roles',
+            'schedule.train',
+            'scan_report',
+            'scan_report.verifications:id,scan_report_id,rangkaian_id,verified_at',
+            'scan_report.verifications.rangkaian:id,name'
+        ])
         ->join('users','rekap_waktu_kereta.user_id','=','users.id')
         ->join('schedules','rekap_waktu_kereta.schedule_id','=','schedules.id')
         ->join('trains','schedules.train_id','=','trains.id')
@@ -57,9 +63,21 @@ class RekapController extends Controller
 
         // if ($request->train_id) $query->where('schedules.train_id', $request->train_id); // Removed separate filter
         
+        // Filter by User
+        if ($request->user_id) {
+            $query->where('rekap_waktu_kereta.user_id', $request->user_id);
+        }
+
         // Default Date Range: Today if not specified
         $dateFrom = $request->date_from ?? now()->format('Y-m-d');
         $dateTo = $request->date_to ?? now()->format('Y-m-d');
+
+        // Batasi range tanggal max 31 hari untuk mencegah memory exhaustion
+        $dateFromCarbon = \Carbon\Carbon::parse($dateFrom);
+        $dateToCarbon = \Carbon\Carbon::parse($dateTo);
+        if ($dateFromCarbon->diffInDays($dateToCarbon) > 31) {
+            $dateTo = $dateFromCarbon->copy()->addDays(31)->format('Y-m-d');
+        }
         
         $query->whereDate('rekap_waktu_kereta.tanggal', '>=', $dateFrom);
         $query->whereDate('rekap_waktu_kereta.tanggal', '<=', $dateTo);
@@ -71,9 +89,12 @@ class RekapController extends Controller
         }
 
         // Urutkan (Terlama di atas agar Putaran 1 duluan)
+        // Safety limit: max 5000 records untuk mencegah crash
         $rekapModels = $query
         ->orderBy('users.name','asc')
-        ->orderBy('rekap_waktu_kereta.waktu_awal', 'asc')->get();
+        ->orderBy('rekap_waktu_kereta.waktu_awal', 'asc')
+        ->limit(5000)
+        ->get();
 
         // 3. Transform Data untuk View (Group by Session Sequential)
         // Gunakan chunkWhile agar sesi yang lintas hari atau jeda panjang terpisah dengan benar

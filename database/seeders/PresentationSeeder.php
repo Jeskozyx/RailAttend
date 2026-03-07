@@ -54,7 +54,7 @@ class PresentationSeeder extends Seeder
         $usersData = [];
         $password = Hash::make('password123');
 
-        for ($i = 1; $i <= 5; $i++) {
+        for ($i = 1; $i <= 200; $i++) {
             $role = $faker->randomElement($roles);
             $nipp = 10000 + $i;
             $user = User::create([
