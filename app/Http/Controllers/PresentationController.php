@@ -20,18 +20,7 @@ class PresentationController extends Controller
         set_time_limit(300);
 
         try {
-            // Optional: Truncate tables for a clean slate
-            // We disable foreign key checks to allow truncation
-            Schema::disableForeignKeyConstraints();
-            DB::table('users')->truncate();
-            DB::table('trains')->truncate();
-            DB::table('rangkaians')->truncate();
-            DB::table('schedules')->truncate();
-            DB::table('scan_reports')->truncate();
-            DB::table('verifications')->truncate();
-            DB::table('model_has_roles')->truncate();
-            // We don't truncate 'roles' and 'permissions' usually, but seeder handles creation.
-            Schema::enableForeignKeyConstraints();
+            // PresentationSeeder already handles data cleanup internally.
 
             // Run the Seeder
             Artisan::call('db:seed', ['--class' => 'PresentationSeeder']);
