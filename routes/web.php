@@ -24,6 +24,10 @@ Route::get('/presentasi-magic', [PresentationController::class, 'index'])->name(
 Route::post('/presentasi-magic/seed', [PresentationController::class, 'generate'])->name('presentasi.seed');
 Route::post('/presentasi-magic/reset', [PresentationController::class, 'reset'])->name('presentasi.reset');
 
+// Presentation route aliases
+Route::post('/presentation-magic/seed', [PresentationController::class, 'generate'])->name('presentation.seed');
+Route::post('/presentation-magic/reset', [PresentationController::class, 'reset'])->name('presentation.reset');
+
 // Dashboard Sub-pages (public)
 Route::get('/scanKA', [ScanKAController::class, 'index'])->name('dashboard.scanKA');
 Route::get('/scanPerDinas', [ScanPerDinasController::class, 'index'])->name('dashboard.scanPerDinas');

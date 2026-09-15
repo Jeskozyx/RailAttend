@@ -41,6 +41,11 @@ class PresentationController extends Controller
             return redirect()->back()->with('error', 'Magic Failed: ' . $e->getMessage());
         }
     }
+    public function reset()
+    {
+        return $this->destroy();
+    }
+
     public function destroy()
     {
         try {

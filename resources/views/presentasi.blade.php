@@ -63,7 +63,7 @@
 
             <!-- SEED BUTTON -->
             <div class="text-center w-full md:w-auto">
-                <form action="{{ route('presentation.seed') }}" method="POST" @submit="loading = true">
+                <form action="{{ route('presentasi.seed') }}" method="POST" @submit="loading = true">
                     @csrf
                     <button type="submit" :disabled="loading || resetting"
                         class="group relative inline-flex items-center justify-center w-full md:w-80 h-32 text-xl font-bold text-black transition-all duration-200 bg-green-500 hover:bg-green-400 focus:outline-none focus:ring-4 focus:ring-green-500/50 disabled:opacity-50 disabled:cursor-not-allowed clip-path-polygon">
@@ -100,7 +100,7 @@
 
             <!-- RESET BUTTON -->
             <div class="text-center w-full md:w-auto">
-                <form action="{{ route('presentation.reset') }}" method="POST" @submit="resetting = true"
+                <form action="{{ route('presentasi.reset') }}" method="POST" @submit="resetting = true"
                     onsubmit="return confirm('WARNING: THIS WILL DELETE ALL DATA. ARE YOU SURE?');">
                     @csrf
                     <button type="submit" :disabled="loading || resetting"

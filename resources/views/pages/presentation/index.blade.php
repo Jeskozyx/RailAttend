@@ -86,7 +86,7 @@
                                 </ul>
                             </div>
 
-                            <form action="{{ route('presentation.reset') }}" method="POST"
+                            <form action="{{ route('presentasi.reset') }}" method="POST"
                                 onsubmit="return confirm('Apakah Anda yakin ingin mereset data presentasi?');">
                                 @csrf
                                 <button type="submit"
